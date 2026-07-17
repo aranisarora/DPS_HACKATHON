@@ -1,0 +1,130 @@
+import { createAdminClient } from "./supabase/admin";
+import { mayFire } from "./autonomy/router";
+import { createCalendarEvent, type CalendarEventParams } from "./adapters/calendar";
+import { sendEmail, type SendEmailParams } from "./adapters/gmail";
+import { postSlackMessage, type SlackMessageParams } from "./adapters/slack";
+import type { AdapterResult } from "./adapters";
+import type { ProposedAction } from "./types";
+
+/**
+ * ===== The executor =====
+ * Single choke point between "an action exists" and "something fired".
+ * 1. Re-checks mayFire() — belt and braces on top of the router.
+ * 2. Marks the row `executing` with a status guard (idempotent: a second
+ *    concurrent call finds no row to claim and no-ops).
+ * 3. Runs the adapter with the action's idempotency key.
+ * 4. Writes result + audit_log entry.
+ */
+export async function executeAction(
+  actionId: string,
+  opts: { approvedByOwner: boolean }
+): Promise<{ ok: boolean; result?: AdapterResult; error?: string }> {
+  const db = createAdminClient();
+
+  const { data: action, error: fetchErr } = await db
+    .from("proposed_actions")
+    .select("*")
+    .eq("id", actionId)
+    .single<ProposedAction>();
+  if (fetchErr || !action) return { ok: false, error: "Action not found" };
+
+  // ===== THE GATE =====
+  if (!mayFire({ tier: action.tier, status: action.status, approvedByOwner: opts.approvedByOwner })) {
+    await audit(db, action, "blocked", { reason: "mayFire returned false" });
+    return { ok: false, error: "Fire gate refused this action" };
+  }
+
+  // Claim the row (idempotency: only one caller can flip it to executing)
+  const { data: claimed } = await db
+    .from("proposed_actions")
+    .update({ status: "executing" })
+    .eq("id", actionId)
+    .in("status", ["proposed", "approved", "edited"])
+    .select("id");
+  if (!claimed?.length) return { ok: false, error: "Action already executing or done" };
+
+  let result: AdapterResult;
+  try {
+    result = await runAdapter(action);
+  } catch (err) {
+    result = { ok: false, demo: false, error: String(err) };
+  }
+
+  await db
+    .from("proposed_actions")
+    .update({
+      status: result.ok ? "executed" : "failed",
+      executed_at: result.ok ? new Date().toISOString() : null,
+      error: result.error ?? null,
+    })
+    .eq("id", actionId);
+
+  await audit(db, action, result.ok ? "fired" : "failed", {
+    demo: result.demo,
+    external_id: result.external_id,
+    detail: result.detail,
+    error: result.error,
+  });
+
+  return { ok: result.ok, result, error: result.error };
+}
+
+async function runAdapter(action: ProposedAction): Promise<AdapterResult> {
+  const p = action.params as Record<string, unknown>;
+  const key = action.idempotency_key;
+
+  switch (action.action_type) {
+    case "follow_up_booking":
+    case "calendar_block":
+    case "agenda_add":
+      return createCalendarEvent(null, p as unknown as CalendarEventParams, key);
+
+    case "recap_email":
+    case "absentee_update":
+    case "email_reply":
+      return sendEmail(null, p as unknown as SendEmailParams, key);
+
+    case "slack_summary":
+      return postSlackMessage(p as unknown as SlackMessageParams, key);
+
+    case "task_assignment": {
+      // Our DB is the source of truth for assignments (Google Tasks can't
+      // assign to others). Create the task row; notify via email/Slack.
+      const db = createAdminClient();
+      const { error } = await db.from("tasks").insert({
+        user_id: action.user_id,
+        source_id: action.source_id,
+        proposed_action_id: action.id,
+        title: (p.title as string) ?? action.title,
+        detail: (p.detail as string) ?? action.description,
+        assignee_name: (p.assignee_name as string) ?? null,
+        due_date: (p.due_date as string) ?? null,
+        source_quote: action.source_quote,
+      });
+      if (error) return { ok: false, demo: false, error: error.message };
+      // Notification is drafted as a separate approve-gated action
+      return { ok: true, demo: false, detail: "Task created in Donna (source of truth)" };
+    }
+
+    case "daily_brief":
+      return { ok: true, demo: false, detail: "Brief compiled (read-only)" };
+
+    default:
+      return { ok: false, demo: false, error: `No adapter for ${action.action_type}` };
+  }
+}
+
+async function audit(
+  db: ReturnType<typeof createAdminClient>,
+  action: ProposedAction,
+  event: string,
+  detail: Record<string, unknown>
+) {
+  await db.from("audit_log").insert({
+    user_id: action.user_id,
+    proposed_action_id: action.id,
+    event,
+    actor: event === "fired" || event === "failed" ? "donna" : "system",
+    detail,
+  });
+}
