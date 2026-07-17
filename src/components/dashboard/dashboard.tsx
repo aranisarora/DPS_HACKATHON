@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Orb, type OrbMood } from "@/components/orb/orb";
 import { ActionCard } from "./action-card";
+import { SendBot } from "./send-bot";
 import { TimeSavedCounter } from "./time-saved-counter";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/badge";
@@ -105,6 +106,7 @@ export function Dashboard({
           <Orb mood={mood} size={280} />
           <TimeSavedCounter minutes={weeklyMinutes} />
           <p className="mt-1 text-sm text-ink-soft">saved this week</p>
+          <SendBot onSent={() => pulse("ripple")} />
         </div>
       </aside>
 
