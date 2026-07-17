@@ -1,19 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { processSource } from "@/lib/pipeline";
 
 /**
  * POST /api/ingest/recall — Recall.ai webhook.
- * Verifies the webhook signature, stores the raw payload as a source.
- * Transcript download + extraction runs via /api/process (kept separate so
- * webhook responds fast).
+ * Verifies the webhook signature, stores the raw payload as a source, then
+ * runs extraction (lib/pipeline.ts) so proposals appear without any user
+ * action.
  */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.text();
 
-    // Webhook signature verification (Recall signs callbacks — svix format)
+    // Webhook signature verification (Recall signs callbacks — svix format).
+    // Fail closed in production: an unsigned endpoint would let anyone inject
+    // fake transcripts into a user's pipeline.
     const secret = process.env.RECALL_WEBHOOK_SECRET;
+    if (!secret && process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "Webhook secret not configured" }, { status: 503 });
+    }
     if (secret) {
       const sig = req.headers.get("svix-signature") ?? "";
       const id = req.headers.get("svix-id") ?? "";
@@ -46,19 +52,34 @@ export async function POST(req: NextRequest) {
     const userId = payload?.data?.metadata?.user_id;
     if (!userId) return NextResponse.json({ ok: true, note: "no user mapping" });
 
-    await db.from("sources").upsert(
-      {
-        user_id: userId,
-        kind: "meeting",
-        title: payload?.data?.meeting_metadata?.title ?? "Meeting",
-        raw: payload,
-        external_id: botId,
-        processed: false,
-      },
-      { onConflict: "user_id,kind,external_id" }
-    );
+    const { data: source } = await db
+      .from("sources")
+      .upsert(
+        {
+          user_id: userId,
+          kind: "meeting",
+          title: payload?.data?.meeting_metadata?.title ?? "Meeting",
+          raw: payload,
+          external_id: botId,
+          processed: false,
+        },
+        { onConflict: "user_id,kind,external_id" }
+      )
+      .select("id, processed")
+      .single();
 
-    return NextResponse.json({ ok: true });
+    // Run extraction now — nothing else picks up unprocessed sources.
+    if (source && !source.processed) {
+      try {
+        await processSource(userId, source.id);
+      } catch (err) {
+        // Source is stored; extraction can be retried via POST /api/process
+        console.error("recall pipeline failed:", err);
+        return NextResponse.json({ ok: true, processed: false });
+      }
+    }
+
+    return NextResponse.json({ ok: true, processed: true });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

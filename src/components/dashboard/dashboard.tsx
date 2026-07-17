@@ -22,7 +22,7 @@ export function Dashboard({
   initialWeeklyMinutes: number;
 }) {
   const [pending, setPending] = useState(initialPending);
-  const [recent, setRecent] = useState(initialRecent);
+  const [recent, setRecent] = useState<(ProposedAction & { demo?: boolean })[]>(initialRecent);
   const [weeklyMinutes, setWeeklyMinutes] = useState(initialWeeklyMinutes);
   const [mood, setMood] = useState<OrbMood>("idle");
   const [seeding, setSeeding] = useState(false);
@@ -66,7 +66,9 @@ export function Dashboard({
         if (data.ok) {
           pulse("approve");
           setWeeklyMinutes((m) => m + (data.minutes_saved ?? action.minutes_saved));
-          setRecent((r) => [{ ...action, status: "executed" as const }, ...r].slice(0, 12));
+          setRecent((r) =>
+            [{ ...action, status: "executed" as const, demo: data.demo === true }, ...r].slice(0, 12)
+          );
         } else {
           pulse("skip", 900);
           setRecent((r) => [{ ...action, status: "failed" as const, error: data.error }, ...r].slice(0, 12));
@@ -92,7 +94,19 @@ export function Dashboard({
     setSyncNote(null);
     const res = await fetch("/api/sync/gmail", { method: "POST" });
     const data = await res.json().catch(() => ({}));
-    setSyncNote(data.demo ? "Google not connected yet" : data.ok ? "Inbox synced" : "Sync failed");
+    setSyncNote(
+      data.demo
+        ? "Google not configured yet"
+        : data.connected === false
+          ? "Sign out and back in to connect Google"
+          : data.baselined
+            ? "Inbox connected — new mail syncs from now"
+            : data.ok
+              ? data.new_messages > 0
+                ? `${data.new_messages} new message${data.new_messages === 1 ? "" : "s"}`
+                : "Inbox up to date"
+              : "Sync failed"
+    );
     setSyncing(false);
     pulse("ripple");
   }, [pulse]);
@@ -171,7 +185,9 @@ export function Dashboard({
                     <p className="truncate text-sm">{a.title}</p>
                     <p className="text-xs text-ink-soft">
                       {a.status === "executed"
-                        ? "Done"
+                        ? a.demo
+                          ? "Done (simulated — Google/Slack not connected)"
+                          : "Done"
                         : a.status === "skipped"
                           ? "Skipped"
                           : "Failed"}

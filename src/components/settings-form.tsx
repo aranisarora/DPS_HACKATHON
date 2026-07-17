@@ -71,7 +71,14 @@ export function SettingsForm({ initialSettings }: { initialSettings: Settings })
                 value={minutes[key] ?? ""}
                 placeholder="default"
                 onChange={(e) =>
-                  setMinutes((m) => ({ ...m, [key]: Number(e.target.value) }))
+                  setMinutes((m) => {
+                    // Cleared field reverts to the default, not 0
+                    if (e.target.value === "") {
+                      const { [key]: _removed, ...rest } = m;
+                      return rest;
+                    }
+                    return { ...m, [key]: Number(e.target.value) };
+                  })
                 }
                 className="w-20 rounded-lg border border-ink/15 px-3 py-1.5 text-right text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
               />

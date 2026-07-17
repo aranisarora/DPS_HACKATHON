@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/card";
 import { SettingsForm } from "@/components/settings-form";
 
@@ -15,6 +16,14 @@ export default async function SettingsPage() {
     .eq("id", user!.id)
     .single();
 
+  // google_connections is service-role only (no RLS policies by design)
+  const { data: googleConn } = await createAdminClient()
+    .from("google_connections")
+    .select("status, last_synced_at")
+    .eq("user_id", user!.id)
+    .eq("provider", "google")
+    .maybeSingle();
+
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="font-display text-3xl font-medium tracking-tight">Settings</h1>
@@ -27,6 +36,21 @@ export default async function SettingsPage() {
         <p className="mt-2 text-sm text-ink-soft">
           {profile?.email} · workspace domain{" "}
           <span className="font-medium text-ink">{profile?.company_domain}</span>
+        </p>
+        <p className="mt-2 text-sm">
+          {googleConn?.status === "connected" ? (
+            <span className="text-emerald-600">
+              Google connected — email &amp; calendar actions run live
+              {googleConn.last_synced_at
+                ? ` · last sync ${new Date(googleConn.last_synced_at).toLocaleString()}`
+                : ""}
+            </span>
+          ) : (
+            <span className="text-amber-600">
+              Google not connected — actions run in simulation. Sign out and back
+              in to grant access.
+            </span>
+          )}
         </p>
       </Card>
 

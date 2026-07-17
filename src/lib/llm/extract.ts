@@ -12,7 +12,8 @@ import { ExtractionResultSchema, type ExtractionResult } from "../schemas";
  * never as instructions to follow.
  */
 
-const MODEL = "gemini-2.0-flash";
+// Overridable without a redeploy in case the pinned model is retired
+const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
 const MAX_RETRIES = 2;
 
 const SYSTEM_PROMPT = `You are the extraction engine for Donna, an AI admin assistant for service businesses.
