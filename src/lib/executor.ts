@@ -1,4 +1,5 @@
 import { createAdminClient } from "./supabase/admin";
+import { getGoogleAccessToken } from "./google/tokens";
 import { mayFire } from "./autonomy/router";
 import { createCalendarEvent, type CalendarEventParams } from "./adapters/calendar";
 import { sendEmail, type SendEmailParams } from "./adapters/gmail";
@@ -76,13 +77,17 @@ async function runAdapter(action: ProposedAction): Promise<AdapterResult> {
   switch (action.action_type) {
     case "follow_up_booking":
     case "calendar_block":
-    case "agenda_add":
-      return createCalendarEvent(null, p as unknown as CalendarEventParams, key);
+    case "agenda_add": {
+      const token = await getGoogleAccessToken(action.user_id);
+      return createCalendarEvent(token, p as unknown as CalendarEventParams, key);
+    }
 
     case "recap_email":
     case "absentee_update":
-    case "email_reply":
-      return sendEmail(null, p as unknown as SendEmailParams, key);
+    case "email_reply": {
+      const token = await getGoogleAccessToken(action.user_id);
+      return sendEmail(token, p as unknown as SendEmailParams, key);
+    }
 
     case "slack_summary":
       return postSlackMessage(p as unknown as SlackMessageParams, key);
@@ -98,7 +103,9 @@ async function runAdapter(action: ProposedAction): Promise<AdapterResult> {
         title: (p.title as string) ?? action.title,
         detail: (p.detail as string) ?? action.description,
         assignee_name: (p.assignee_name as string) ?? null,
-        due_date: (p.due_date as string) ?? null,
+        // tasks.due_date is a Postgres date — LLM due hints can be natural
+        // language ("Friday"), which would fail the insert
+        due_date: toIsoDate(p.due_date),
         source_quote: action.source_quote,
       });
       if (error) return { ok: false, demo: false, error: error.message };
@@ -112,6 +119,13 @@ async function runAdapter(action: ProposedAction): Promise<AdapterResult> {
     default:
       return { ok: false, demo: false, error: `No adapter for ${action.action_type}` };
   }
+}
+
+function toIsoDate(value: unknown): string | null {
+  if (typeof value !== "string" || !value) return null;
+  const ms = Date.parse(value);
+  if (Number.isNaN(ms)) return null;
+  return new Date(ms).toISOString().slice(0, 10);
 }
 
 async function audit(
