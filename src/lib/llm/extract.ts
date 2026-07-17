@@ -1,7 +1,7 @@
 import { ExtractionResultSchema, type ExtractionResult } from "../schemas";
 
 /**
- * ===== LLM service — Fable 5 behind a thin interface =====
+ * ===== LLM service — Gemini 2.0 Flash behind a thin interface =====
  *
  * The model reads transcripts/emails and proposes structured actions.
  * It NEVER makes the fire decision — that belongs to autonomy/router.ts.
@@ -12,7 +12,7 @@ import { ExtractionResultSchema, type ExtractionResult } from "../schemas";
  * never as instructions to follow.
  */
 
-const MODEL = "claude-fable-5";
+const MODEL = "gemini-2.0-flash";
 const MAX_RETRIES = 2;
 
 const SYSTEM_PROMPT = `You are the extraction engine for Donna, an AI admin assistant for service businesses.
@@ -49,9 +49,9 @@ export async function extractActions(
   sourceContent: string,
   ctx: ExtractionContext = {}
 ): Promise<ExtractionResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY not configured");
+    throw new Error("GEMINI_API_KEY not configured");
   }
 
   const userMessage = [
@@ -68,26 +68,37 @@ export async function extractActions(
     .filter(Boolean)
     .join("\n\n");
 
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+
   let lastError: unknown;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch(url, {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: MODEL,
-          max_tokens: 4096,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: userMessage }],
+          system_instruction: {
+            parts: [{ text: SYSTEM_PROMPT }],
+          },
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: userMessage }],
+            },
+          ],
+          generationConfig: {
+            responseMimeType: "application/json",
+            maxOutputTokens: 4096,
+            temperature: 0.2,
+          },
         }),
       });
-      if (!res.ok) throw new Error(`Anthropic API ${res.status}: ${await res.text()}`);
+      if (!res.ok) throw new Error(`Gemini API ${res.status}: ${await res.text()}`);
       const data = await res.json();
-      const text: string = data.content?.[0]?.text ?? "";
+      const text: string =
+        data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
       // Tolerate accidental markdown fencing
       const jsonText = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
       const parsed = JSON.parse(jsonText);
