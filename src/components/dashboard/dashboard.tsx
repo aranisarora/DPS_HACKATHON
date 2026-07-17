@@ -8,7 +8,6 @@ import { TimeSavedCounter } from "./time-saved-counter";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { captureDecision } from "@/components/providers/posthog-provider";
 import type { ProposedAction } from "@/lib/types";
 
 export function Dashboard({
@@ -44,7 +43,6 @@ export function Dashboard({
 
   const decide = useCallback(
     async (action: ProposedAction, decision: "approve" | "edit" | "skip", editedParams?: Record<string, unknown>) => {
-      captureDecision(decision, action.action_type, action.minutes_saved);
       // Optimistic: card folds away as the orb reacts
       setPending((p) => p.filter((a) => a.id !== action.id));
       if (decision === "skip") {

@@ -17,7 +17,6 @@ shows you exactly how much time she gave back.
 - **Supabase** — Google OAuth, Postgres + RLS, the audit trail
 - **Fable 5** — extraction & drafting (never the fire decision)
 - **Recall.ai** — meeting capture · **Google Workspace APIs** · **Slack**
-- **Sentry** + **PostHog** — observability & product analytics
 - **Vercel** — hosting
 
 ## The autonomy engine (the IP)

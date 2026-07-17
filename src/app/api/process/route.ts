@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import * as Sentry from "@sentry/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractActions } from "@/lib/llm/extract";
@@ -114,7 +113,7 @@ export async function POST(req: NextRequest) {
     await db.from("sources").update({ processed: true }).eq("id", source.id);
     return NextResponse.json({ ok: true, created: created.length, summary: extraction.summary });
   } catch (err) {
-    Sentry.captureException(err);
+    console.error(err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

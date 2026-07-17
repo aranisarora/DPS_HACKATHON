@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
-import * as Sentry from "@sentry/nextjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -61,7 +60,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    Sentry.captureException(err);
+    console.error(err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

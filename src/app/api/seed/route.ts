@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import * as Sentry from "@sentry/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { routeAction } from "@/lib/autonomy/router";
@@ -117,7 +116,7 @@ export async function POST() {
 
     return NextResponse.json({ ok: true, seeded: DEMO_ACTIONS.length });
   } catch (err) {
-    Sentry.captureException(err);
+    console.error(err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

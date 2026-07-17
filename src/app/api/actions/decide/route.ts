@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import * as Sentry from "@sentry/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DecisionSchema } from "@/lib/schemas";
@@ -76,7 +75,7 @@ export async function POST(req: NextRequest) {
       error: result.error,
     });
   } catch (err) {
-    Sentry.captureException(err);
+    console.error(err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

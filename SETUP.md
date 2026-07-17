@@ -10,13 +10,15 @@ Everything already provisioned, and every step you still need to do yourself.
 |---|---|---|
 | Supabase project **Donna** | `mctuxlttefxeyvmljytz` · eu-west-2 (London) | ✅ created |
 | Full schema + RLS on every table | migrations `donna_core_schema`, `security_hardening` | ✅ applied |
-| Sentry project **donna** | org `aranis-arora` (de region) | ✅ created, DSN in `.env.local` |
 | Next.js 15 app (TS, Tailwind, R3F orb, Framer Motion) | this repo | ✅ built |
 | Autonomy router + 14 unit tests | `src/lib/autonomy/` | ✅ passing |
 | Token encryption key | `.env.local` `TOKEN_ENCRYPTION_KEY` | ✅ generated |
 | Vercel project **donna** (production) | https://donna-aranis-aroras-projects.vercel.app | ✅ deployed |
 
 ---
+
+https://donna-jet.vercel.app
+
 
 ## 🔧 Steps you must do (in order)
 
@@ -48,27 +50,17 @@ Everything already provisioned, and every step you still need to do yourself.
 7. Supabase → Auth → URL Configuration → set **Site URL** to your Vercel URL and add
    `http://localhost:3000/**` + `https://<your-vercel-domain>/**` to Redirect URLs
 
-### 4. PostHog (5 min)
-1. In this chat: run `/mcp` → authenticate **claude.ai PostHog** (lets Claude query analytics later)
-2. https://eu.posthog.com → Project settings → copy the **Project API key** (`phc_…`)
-3. `.env.local` → `NEXT_PUBLIC_POSTHOG_KEY=` (host is already `https://eu.i.posthog.com`)
-4. Add to Vercel env vars too. Events already instrumented: `action_approve` / `action_edit` / `action_skip` with `action_type` + `minutes_saved` — approve-vs-skip rates per action type are the product-gold dashboard.
-
-### 5. Recall.ai (10 min) — live meeting capture
+### 4. Recall.ai (10 min) — live meeting capture
 1. https://recall.ai → sign up (free starter credits; ~$0.50/recording-hour after)
 2. Dashboard → API key → `.env.local` → `RECALL_API_KEY=`
 3. Webhooks → add endpoint: `https://<your-vercel-domain>/api/ingest/recall`
 4. Copy the webhook signing secret → `RECALL_WEBHOOK_SECRET=`
    (The webhook route verifies svix signatures; unsigned calls are rejected.)
 
-### 6. Slack (5 min, optional — cut first if time runs short)
+### 5. Slack (5 min, optional — cut first if time runs short)
 1. https://api.slack.com/apps → Create app → from scratch
 2. OAuth & Permissions → Bot scopes: `chat:write`, `users:read`, `im:write`
 3. Install to workspace → copy **Bot User OAuth Token** (`xoxb-…`) → `SLACK_BOT_TOKEN=`
-
-### 7. Sentry source maps (optional, 2 min)
-1. https://aranis-arora.sentry.io/settings/auth-tokens/ → create token with `project:releases` + `org:read`
-2. `.env.local` + Vercel → `SENTRY_AUTH_TOKEN=`
 
 ---
 
@@ -93,7 +85,7 @@ npm run build      # production build
 - **Idempotent executors** — unique `idempotency_key` per action; status-guarded claim prevents double-fires; retries with backoff
 - **The fire gate** — single deterministic module (`src/lib/autonomy/router.ts`), 14 unit tests; model output is input, never decision
 - **Prompt-injection defence** — source content wrapped as data; system prompt refuses imperative content in transcripts/emails
-- **Observability** — Sentry on client/server/edge + audit_log as user-facing proof
+- **Observability** — audit_log as user-facing proof
 - **LLM hygiene** — Zod-validated JSON, reject/retry malformed extractions
 - **Performance** — orb lazy-loaded (`ssr:false`), DPR capped, low-power GL, CSS fallback
 - **Compliance** — bot named "Donna" announces itself; write your data-retention policy before public launch

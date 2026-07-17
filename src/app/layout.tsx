@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Space_Grotesk } from "next/font/google";
 import "./globals.css";
-import { PHProvider } from "@/components/providers/posthog-provider";
 
 const display = Fraunces({
   subsets: ["latin"],
@@ -25,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${sans.variable}`}>
       <body className="font-sans bg-canvas text-ink min-h-screen">
-        <PHProvider>{children}</PHProvider>
+        {children}
       </body>
     </html>
   );
