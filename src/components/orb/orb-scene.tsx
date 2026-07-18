@@ -22,21 +22,23 @@ function OrbCore({ mood }: { mood: OrbMood }) {
     const t = clock.getElapsedTime();
     if (!mesh.current || !mat.current) return;
     // breathing pulse
-    const base = 1 + Math.sin(t * 0.8) * 0.03;
+    const base = 1 + Math.sin(t * 0.8) * 0.045;
     const boost =
       mood === "approve" ? 1.08 : mood === "ripple" ? 1.05 : mood === "skip" ? 0.96 : 1;
     mesh.current.scale.setScalar(base * boost);
-    mesh.current.rotation.y = t * 0.12;
-    // molten energy by mood — mostly still, liquid when executing
+    // tumble on two axes — the moving highlight is what sells the rotation
+    mesh.current.rotation.y = t * 0.25;
+    mesh.current.rotation.x = Math.sin(t * 0.3) * 0.15;
+    // molten energy by mood — always visibly liquid, surging when executing
     const target =
-      mood === "executing" ? 0.42 : mood === "ripple" ? 0.3 : mood === "approve" ? 0.32 : 0.16;
-    mat.current.distort = THREE.MathUtils.lerp(mat.current.distort ?? 0.16, target, 0.05);
+      mood === "executing" ? 0.5 : mood === "ripple" ? 0.42 : mood === "approve" ? 0.44 : 0.32;
+    mat.current.distort = THREE.MathUtils.lerp(mat.current.distort ?? 0.32, target, 0.05);
   });
 
   const color = mood === "skip" ? "#6d6653" : mood === "approve" ? "#e6c87f" : "#c2a25b";
 
   return (
-    <Float speed={1.2} rotationIntensity={0.2} floatIntensity={0.4}>
+    <Float speed={1.6} rotationIntensity={0.45} floatIntensity={0.9}>
       <mesh ref={mesh}>
         <icosahedronGeometry args={[1, 48]} />
         <MeshDistortMaterial
@@ -46,8 +48,8 @@ function OrbCore({ mood }: { mood: OrbMood }) {
           emissiveIntensity={mood === "executing" ? 0.45 : 0.18}
           roughness={0.22}
           metalness={0.95}
-          distort={0.16}
-          speed={mood === "executing" ? 4 : 1.4}
+          distort={0.32}
+          speed={mood === "executing" ? 4 : 2.2}
         />
       </mesh>
     </Float>
