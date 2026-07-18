@@ -8,10 +8,10 @@ import * as THREE from "three";
 export type OrbMood = "idle" | "ripple" | "approve" | "skip" | "executing";
 
 /**
- * The orb — Donna's living presence. Distorted sphere with fresnel-ish
- * rim glow and soft particles. 3D is ambiance, never navigation.
- * Performance: capped particle count, DPR clamp, demand frameloop
- * handled by parent visibility.
+ * Donna's presence — a polished brass sphere, like the one desk ornament in
+ * a corner office nobody dares touch. It breathes, and molten ripples run
+ * across the metal when she's working. 3D is ambiance, never navigation.
+ * Performance: capped particle count, DPR clamp, low-power GL context.
  */
 
 function OrbCore({ mood }: { mood: OrbMood }) {
@@ -27,13 +27,13 @@ function OrbCore({ mood }: { mood: OrbMood }) {
       mood === "approve" ? 1.08 : mood === "ripple" ? 1.05 : mood === "skip" ? 0.96 : 1;
     mesh.current.scale.setScalar(base * boost);
     mesh.current.rotation.y = t * 0.12;
-    // distortion energy by mood
+    // molten energy by mood — mostly still, liquid when executing
     const target =
-      mood === "executing" ? 0.55 : mood === "ripple" ? 0.48 : mood === "approve" ? 0.5 : 0.35;
-    mat.current.distort = THREE.MathUtils.lerp(mat.current.distort ?? 0.35, target, 0.05);
+      mood === "executing" ? 0.42 : mood === "ripple" ? 0.3 : mood === "approve" ? 0.32 : 0.16;
+    mat.current.distort = THREE.MathUtils.lerp(mat.current.distort ?? 0.16, target, 0.05);
   });
 
-  const color = mood === "approve" ? "#8f7bff" : mood === "skip" ? "#9aa0b0" : "#7c6aea";
+  const color = mood === "skip" ? "#6d6653" : mood === "approve" ? "#e6c87f" : "#c2a25b";
 
   return (
     <Float speed={1.2} rotationIntensity={0.2} floatIntensity={0.4}>
@@ -42,19 +42,20 @@ function OrbCore({ mood }: { mood: OrbMood }) {
         <MeshDistortMaterial
           ref={mat}
           color={color}
-          emissive={"#3ec6c0"}
-          emissiveIntensity={mood === "executing" ? 0.5 : 0.25}
-          roughness={0.15}
-          metalness={0.4}
-          distort={0.35}
-          speed={mood === "executing" ? 4 : 1.6}
+          emissive={"#8a4b1f"}
+          emissiveIntensity={mood === "executing" ? 0.45 : 0.18}
+          roughness={0.22}
+          metalness={0.95}
+          distort={0.16}
+          speed={mood === "executing" ? 4 : 1.4}
         />
       </mesh>
     </Float>
   );
 }
 
-function Particles({ count = 120 }: { count?: number }) {
+/** Motes of gold dust drifting in the lamplight. */
+function Particles({ count = 110 }: { count?: number }) {
   const points = useRef<THREE.Points>(null);
   const positions = useMemo(() => {
     const arr = new Float32Array(count * 3);
@@ -78,18 +79,18 @@ function Particles({ count = 120 }: { count?: number }) {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial size={0.02} color="#7c6aea" transparent opacity={0.45} sizeAttenuation />
+      <pointsMaterial size={0.018} color="#e6c87f" transparent opacity={0.5} sizeAttenuation />
     </points>
   );
 }
 
-/** Ring the orb orbits while executing. */
+/** Brass ring the sphere spins inside while executing. */
 function ExecRing({ visible }: { visible: boolean }) {
   const ring = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
     if (ring.current) {
       ring.current.rotation.z = clock.getElapsedTime() * 0.8;
-      const targetOpacity = visible ? 0.6 : 0;
+      const targetOpacity = visible ? 0.7 : 0;
       const m = ring.current.material as THREE.MeshBasicMaterial;
       m.opacity = THREE.MathUtils.lerp(m.opacity, targetOpacity, 0.08);
     }
@@ -97,7 +98,7 @@ function ExecRing({ visible }: { visible: boolean }) {
   return (
     <mesh ref={ring} rotation={[Math.PI / 2.3, 0, 0]}>
       <torusGeometry args={[1.5, 0.008, 8, 96]} />
-      <meshBasicMaterial color="#3ec6c0" transparent opacity={0} />
+      <meshBasicMaterial color="#e6c87f" transparent opacity={0} />
     </mesh>
   );
 }
@@ -116,9 +117,10 @@ export default function OrbScene({
         camera={{ position: [0, 0, 3.4], fov: 45 }}
         gl={{ antialias: true, alpha: true, powerPreference: "low-power" }}
       >
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[3, 4, 5]} intensity={1.1} />
-        <pointLight position={[-3, -2, -3]} intensity={0.4} color="#3ec6c0" />
+        {/* Warm key like a banker's lamp, cool green fill from the room */}
+        <ambientLight intensity={0.35} color="#f5e5c0" />
+        <directionalLight position={[3, 4, 5]} intensity={1.6} color="#ffe9bd" />
+        <pointLight position={[-3, -2, -3]} intensity={0.5} color="#3d5c4d" />
         <OrbCore mood={mood} />
         <Particles />
         <ExecRing visible={mood === "executing"} />

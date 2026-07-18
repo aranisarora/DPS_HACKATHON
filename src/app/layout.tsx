@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
-import { Fraunces, Space_Grotesk } from "next/font/google";
+import { Besley, Schibsted_Grotesk, Fragment_Mono } from "next/font/google";
 import "./globals.css";
 
-const display = Fraunces({
+const display = Besley({
   subsets: ["latin"],
   variable: "--font-display",
-  axes: ["opsz"],
+  style: ["normal", "italic"],
 });
-const sans = Space_Grotesk({ subsets: ["latin"], variable: "--font-sans" });
+const sans = Schibsted_Grotesk({ subsets: ["latin"], variable: "--font-sans" });
+const mono = Fragment_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  weight: "400",
+});
 
 export const metadata: Metadata = {
   title: "Donna — your AI admin assistant",
@@ -22,8 +27,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${sans.variable}`}>
-      <body className="font-sans bg-canvas text-ink min-h-screen">
+    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+      <body className="desk-surface font-sans text-paper min-h-screen">
         {children}
       </body>
     </html>

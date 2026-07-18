@@ -32,21 +32,24 @@ export default async function ActivityPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="font-display text-3xl font-medium tracking-tight">Activity</h1>
-      <p className="mt-1 text-sm text-ink-soft">
+      <p className="font-mono text-xs uppercase tracking-[0.28em] text-brass">
+        The paper trail
+      </p>
+      <h1 className="mt-2 font-display text-3xl font-medium tracking-tight">Activity</h1>
+      <p className="mt-1 text-sm text-sage">
         The audit trail — every source Donna read and every decision made.
       </p>
 
       <h2 className="mt-8 mb-3 font-display text-xl font-medium">Sources</h2>
-      <Card className="divide-y divide-ink/[0.06]">
+      <Card className="divide-y divide-paper-line">
         {(sources ?? []).length === 0 && (
-          <p className="p-6 text-center text-sm text-ink-soft">No meetings or emails yet.</p>
+          <p className="p-6 text-center text-sm italic text-ink-soft">No meetings or emails yet.</p>
         )}
         {(sources ?? []).map((s) => (
           <div key={s.id} className="flex items-center justify-between gap-4 px-5 py-4">
             <div>
               <p className="text-sm font-medium">{s.title}</p>
-              <p className="text-xs text-ink-soft">
+              <p className="font-mono text-[11px] tracking-wide text-ink-soft">
                 {s.kind} ·{" "}
                 {new Date(s.occurred_at).toLocaleString("en-GB", {
                   day: "numeric",
@@ -64,9 +67,9 @@ export default async function ActivityPage() {
       </Card>
 
       <h2 className="mt-10 mb-3 font-display text-xl font-medium">Audit log</h2>
-      <Card className="divide-y divide-ink/[0.06]">
+      <Card className="divide-y divide-paper-line">
         {(audit ?? []).length === 0 && (
-          <p className="p-6 text-center text-sm text-ink-soft">No events yet.</p>
+          <p className="p-6 text-center text-sm italic text-ink-soft">No events yet.</p>
         )}
         {(audit ?? []).map((e) => {
           const pa = e.proposed_actions as unknown as { title?: string } | null;
@@ -77,7 +80,7 @@ export default async function ActivityPage() {
                   <span className="font-medium">{EVENT_LABELS[e.event] ?? e.event}</span>
                   {pa?.title && <span className="text-ink-soft"> — {pa.title}</span>}
                 </p>
-                <p className="text-xs text-ink-soft">
+                <p className="font-mono text-[11px] tracking-wide text-ink-soft">
                   {e.actor} ·{" "}
                   {new Date(e.created_at).toLocaleString("en-GB", {
                     day: "numeric",

@@ -58,8 +58,8 @@ export default function OnboardingPage() {
     <main className="flex min-h-screen flex-col items-center justify-center px-6">
       <Orb size={180} mood={saving ? "executing" : "idle"} />
       <div className="w-full max-w-lg">
-        <p className="text-center text-xs font-medium uppercase tracking-[0.2em] text-accent">
-          {step + 1} of {QUESTIONS.length}
+        <p className="text-center font-mono text-xs uppercase tracking-[0.28em] text-brass">
+          Her first briefing · {step + 1} of {QUESTIONS.length}
         </p>
         <AnimatePresence mode="wait">
           <motion.div
@@ -80,13 +80,14 @@ export default function OnboardingPage() {
               onChange={(e) =>
                 setAnswers((a) => ({ ...a, [current.key]: e.target.value }))
               }
-              className="mt-6 w-full rounded-2xl border border-ink/10 bg-white p-5 text-sm leading-relaxed shadow-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
+              className="paper-surface mt-6 w-full rounded-memo p-5 text-sm leading-relaxed text-ink shadow-memo placeholder:text-ink-soft/60 focus:outline-none focus:ring-2 focus:ring-brass/60"
             />
           </motion.div>
         </AnimatePresence>
         <div className="mt-6 flex items-center justify-between">
           <Button
             variant="ghost"
+            className="text-sage hover:bg-paper/5 hover:text-paper"
             onClick={() => setStep(Math.max(0, step - 1))}
             disabled={step === 0 || saving}
           >

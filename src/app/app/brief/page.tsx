@@ -52,6 +52,7 @@ export default async function BriefPage() {
   const sections: Array<{
     title: string;
     hint: string;
+    urgent?: boolean;
     items: Array<{ id: string; title: string; sub?: string; mins?: number }>;
     empty: string;
   }> = [
@@ -78,6 +79,7 @@ export default async function BriefPage() {
     {
       title: "Overdue",
       hint: "Assigned tasks past due",
+      urgent: true,
       items: (overdue as Task[] | null ?? []).map((t) => ({
         id: t.id,
         title: t.title,
@@ -100,8 +102,11 @@ export default async function BriefPage() {
     <div className="mx-auto max-w-3xl">
       <div className="mb-8 flex items-end justify-between">
         <div>
-          <h1 className="font-display text-3xl font-medium tracking-tight">Daily brief</h1>
-          <p className="mt-1 text-sm text-ink-soft">
+          <p className="font-mono text-xs uppercase tracking-[0.28em] text-brass">
+            The morning memo
+          </p>
+          <h1 className="mt-2 font-display text-3xl font-medium tracking-tight">Daily brief</h1>
+          <p className="mt-1 text-sm text-sage">
             {new Date().toLocaleDateString("en-GB", {
               weekday: "long",
               day: "numeric",
@@ -110,11 +115,11 @@ export default async function BriefPage() {
           </p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-ink-soft">Saved today</p>
-          <p className="font-display text-2xl font-semibold text-iridescent">
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-sage">Saved today</p>
+          <p className="font-mono text-2xl text-brass-bright">
             {formatMinutes(todayMinutes)}
           </p>
-          <p className="text-xs text-ink-soft">{formatMinutes(weeklyMinutes)} this week</p>
+          <p className="font-mono text-xs text-sage/80">{formatMinutes(weeklyMinutes)} this week</p>
         </div>
       </div>
 
@@ -122,23 +127,33 @@ export default async function BriefPage() {
         {sections.map((s) => (
           <Card key={s.title} className="p-6">
             <div className="mb-3 flex items-baseline justify-between">
-              <h2 className="font-display text-xl font-medium">{s.title}</h2>
-              <span className="text-xs text-ink-soft">{s.hint}</span>
+              <h2
+                className={`font-display text-xl font-medium ${
+                  s.urgent && s.items.length > 0 ? "text-pencil" : ""
+                }`}
+              >
+                {s.title}
+              </h2>
+              <span className="font-mono text-[11px] uppercase tracking-wider text-ink-soft">
+                {s.hint}
+              </span>
             </div>
             {s.items.length === 0 ? (
-              <p className="text-sm text-ink-soft">{s.empty}</p>
+              <p className="text-sm italic text-ink-soft">{s.empty}</p>
             ) : (
-              <ul className="divide-y divide-ink/[0.06]">
+              <ul className="divide-y divide-paper-line">
                 {s.items.map((item) => (
                   <li key={item.id} className="flex items-center justify-between gap-3 py-2.5">
                     <div className="min-w-0">
                       <p className="truncate text-sm">{item.title}</p>
                       {item.sub && (
-                        <p className="truncate text-xs italic text-ink-soft">“{item.sub}”</p>
+                        <p className="truncate font-display text-xs italic text-ink-soft">
+                          “{item.sub}”
+                        </p>
                       )}
                     </div>
                     {item.mins != null && (
-                      <Chip className="shrink-0 bg-accent-soft text-accent">+{item.mins} min</Chip>
+                      <Chip className="shrink-0 text-brass-deep">+{item.mins} min</Chip>
                     )}
                   </li>
                 ))}

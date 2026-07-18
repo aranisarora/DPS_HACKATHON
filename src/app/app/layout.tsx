@@ -20,9 +20,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-ink/[0.06] bg-canvas/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-desk-line bg-desk/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/app" className="font-display text-xl font-medium tracking-tight">
+          <Link href="/app" className="font-display text-xl italic tracking-tight text-brass">
             Donna
           </Link>
           <nav className="flex items-center gap-1">
@@ -30,7 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-full px-4 py-1.5 text-sm text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
+                className="rounded-memo px-4 py-1.5 text-sm text-sage transition-colors hover:bg-paper/5 hover:text-paper"
               >
                 {item.label}
               </Link>

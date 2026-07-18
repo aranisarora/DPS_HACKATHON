@@ -1,37 +1,29 @@
 import { cn } from "@/lib/utils";
 import type { Tier } from "@/lib/types";
 
+/* Tier marks are rubber stamps — the office's actual vocabulary. */
 const tierStyles: Record<Tier, string> = {
-  auto: "bg-accent-teal/10 text-teal-700 border-accent-teal/30",
-  approve: "bg-accent-soft text-accent border-accent/25",
-  suggest: "bg-amber-50 text-amber-700 border-amber-200",
+  auto: "text-brass-deep",
+  approve: "text-ink",
+  suggest: "text-pencil",
 };
 
 const tierLabels: Record<Tier, string> = {
-  auto: "Done automatically",
+  auto: "Runs itself",
   approve: "Needs your OK",
-  suggest: "Suggestion",
+  suggest: "For your eyes",
 };
 
 export function TierBadge({ tier, className }: { tier: Tier; className?: string }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium",
-        tierStyles[tier],
-        className
-      )}
-    >
-      {tierLabels[tier]}
-    </span>
-  );
+  return <span className={cn("stamp", tierStyles[tier], className)}>{tierLabels[tier]}</span>;
 }
 
+/** Ledger figure — minutes credited, set in mono like a bookkeeping entry. */
 export function Chip({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full bg-ink/5 px-2.5 py-0.5 text-[11px] font-medium text-ink-soft",
+        "inline-flex items-center gap-1 font-mono text-[11px] tracking-wider text-ink-soft",
         className
       )}
     >

@@ -11,7 +11,7 @@ export function SignOutButton() {
         await createClient().auth.signOut();
         router.push("/");
       }}
-      className="ml-2 rounded-full px-4 py-1.5 text-sm text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
+      className="ml-2 rounded-memo px-4 py-1.5 text-sm text-sage transition-colors hover:bg-paper/5 hover:text-paper"
     >
       Sign out
     </button>

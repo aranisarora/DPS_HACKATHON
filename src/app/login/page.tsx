@@ -31,18 +31,21 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6">
       <Orb size={220} />
-      <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">
-        Meet Donna
+      <p className="font-mono text-xs uppercase tracking-[0.28em] text-brass">
+        The front desk
+      </p>
+      <h1 className="mt-3 font-display text-4xl font-medium tracking-tight">
+        Meet <span className="italic text-brass-bright">Donna</span>
       </h1>
-      <p className="mt-3 max-w-sm text-center text-sm leading-relaxed text-ink-soft">
+      <p className="mt-3 max-w-sm text-center text-sm leading-relaxed text-sage">
         One Google sign-in connects your calendar, inbox and tasks. Donna never
         acts without your approval.
       </p>
       <Button size="lg" className="mt-8" onClick={signIn} disabled={loading}>
         {loading ? "Redirecting…" : "Continue with Google"}
       </Button>
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
-      <p className="mt-6 max-w-xs text-center text-xs text-ink-soft">
+      {error && <p className="mt-4 text-sm text-pencil">{error}</p>}
+      <p className="mt-6 max-w-xs text-center text-xs text-sage/80">
         By continuing you agree Donna may read your meetings and email to draft
         work for your approval.
       </p>

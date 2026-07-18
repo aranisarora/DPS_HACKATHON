@@ -43,7 +43,12 @@ export function SendBot({ onSent }: { onSent?: () => void }) {
   return (
     <div className="mt-6 w-full max-w-[280px]">
       {!open ? (
-        <Button variant="outline" size="sm" className="w-full" onClick={() => setOpen(true)}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full border-sage/40 text-sage hover:border-brass hover:text-brass"
+          onClick={() => setOpen(true)}
+        >
           Send Donna to a meeting
         </Button>
       ) : (
@@ -61,7 +66,7 @@ export function SendBot({ onSent }: { onSent?: () => void }) {
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
               placeholder="Paste a Zoom / Meet / Teams link"
-              className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
+              className="w-full rounded-memo border border-desk-line bg-desk-raised px-3 py-2 text-sm text-paper placeholder:text-sage/60 focus:outline-none focus:ring-2 focus:ring-brass/60"
             />
             <div className="flex gap-2">
               <Button size="sm" className="flex-1" onClick={send} disabled={sending || !url.trim()}>
@@ -70,6 +75,7 @@ export function SendBot({ onSent }: { onSent?: () => void }) {
               <Button
                 variant="ghost"
                 size="sm"
+                className="text-sage hover:bg-paper/5 hover:text-paper"
                 onClick={() => {
                   setOpen(false);
                   setNote(null);
@@ -82,7 +88,7 @@ export function SendBot({ onSent }: { onSent?: () => void }) {
         </AnimatePresence>
       )}
       {note && (
-        <p className={`mt-2 text-xs ${note.ok ? "text-ink-soft" : "text-red-500"}`}>
+        <p className={`mt-2 text-xs ${note.ok ? "text-sage" : "text-pencil"}`}>
           {note.text}
         </p>
       )}

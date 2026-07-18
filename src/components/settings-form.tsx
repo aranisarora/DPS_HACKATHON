@@ -80,7 +80,7 @@ export function SettingsForm({ initialSettings }: { initialSettings: Settings })
                     return { ...m, [key]: Number(e.target.value) };
                   })
                 }
-                className="w-20 rounded-lg border border-ink/15 px-3 py-1.5 text-right text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
+                className="w-20 rounded-memo border border-ink/25 bg-paper px-3 py-1.5 text-right font-mono text-sm focus:outline-none focus:ring-2 focus:ring-brass/60"
               />
             </div>
           ))}
@@ -101,7 +101,7 @@ export function SettingsForm({ initialSettings }: { initialSettings: Settings })
             step={0.01}
             value={autoMin}
             onChange={(e) => setAutoMin(Number(e.target.value))}
-            className="w-full accent-[#7c6aea]"
+            className="w-full accent-[#8a6f35]"
           />
           <span className="w-14 text-right font-mono text-sm">{Math.round(autoMin * 100)}%</span>
         </div>
@@ -111,7 +111,7 @@ export function SettingsForm({ initialSettings }: { initialSettings: Settings })
         <Button onClick={save} disabled={saving}>
           {saving ? "Saving…" : "Save settings"}
         </Button>
-        {saved && <span className="text-sm text-emerald-600">Saved.</span>}
+        {saved && <span className="font-mono text-xs uppercase tracking-wider text-brass">Saved.</span>}
       </div>
     </>
   );

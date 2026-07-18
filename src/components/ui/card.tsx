@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 
+/** A memo — ivory paper resting on the desk. */
 export function Card({
   className,
   children,
@@ -10,7 +11,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-ink/[0.07] bg-white shadow-[0_1px_3px_rgba(22,22,26,0.04)]",
+        "paper-surface rounded-memo text-ink shadow-memo",
         className
       )}
     >

@@ -114,12 +114,20 @@ export function Dashboard({
 
   return (
     <div className="grid gap-10 lg:grid-cols-[320px_1fr]">
-      {/* Orb + counter — docked beside the feed */}
+      {/* Donna's corner of the desk — orb, ledger total, the bot dispatch */}
       <aside className="lg:sticky lg:top-24 lg:self-start">
         <div className="flex flex-col items-center text-center">
-          <Orb mood={mood} size={280} />
+          <div className="relative">
+            <div
+              aria-hidden
+              className="absolute inset-0 m-auto h-56 w-56 rounded-full shadow-lamp"
+            />
+            <Orb mood={mood} size={280} />
+          </div>
           <TimeSavedCounter minutes={weeklyMinutes} />
-          <p className="mt-1 text-sm text-ink-soft">saved this week</p>
+          <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.2em] text-sage/80">
+            this week
+          </p>
           <SendBot onSent={() => pulse("ripple")} />
         </div>
       </aside>
@@ -129,25 +137,31 @@ export function Dashboard({
         <div className="mb-6 flex items-end justify-between">
           <div>
             <h1 className="font-display text-3xl font-medium tracking-tight">
-              Needs your OK
+              Needs your <span className="italic text-brass-bright">OK</span>
             </h1>
-            <p className="mt-1 text-sm text-ink-soft">
+            <p className="mt-1 text-sm text-sage">
               {pending.length === 0
                 ? "All clear. Donna will ripple when something new arrives."
-                : `${pending.length} action${pending.length === 1 ? "" : "s"} waiting — approve, edit or skip.`}
+                : `${pending.length} memo${pending.length === 1 ? "" : "s"} on your desk — approve, edit or skip.`}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {syncNote && <span className="text-xs text-ink-soft">{syncNote}</span>}
-            <Button variant="outline" size="sm" onClick={syncNow} disabled={syncing}>
+            {syncNote && <span className="text-xs text-sage">{syncNote}</span>}
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-sage/40 text-sage hover:border-brass hover:text-brass"
+              onClick={syncNow}
+              disabled={syncing}
+            >
               {syncing ? "Syncing…" : "Sync now"}
             </Button>
           </div>
         </div>
 
         {pending.length === 0 && recent.length === 0 && (
-          <Card className="flex flex-col items-center gap-4 p-12 text-center">
-            <p className="font-display text-xl">Nothing here yet.</p>
+          <Card className="paper-ruled flex flex-col items-center gap-4 p-12 text-center">
+            <p className="font-display text-xl italic">A clean desk.</p>
             <p className="max-w-sm text-sm text-ink-soft">
               Donna proposes actions when meetings end or emails arrive. Load
               the demo meeting to see the full loop — transcript to approved
@@ -176,19 +190,25 @@ export function Dashboard({
           </AnimatePresence>
         </div>
 
-        {/* History with per-action minute chips */}
+        {/* The ledger — what's been filed, with minutes credited */}
         {recent.length > 0 && (
           <div className="mt-12">
-            <h2 className="mb-4 font-display text-xl font-medium">Recent</h2>
-            <Card className="divide-y divide-ink/[0.06]">
+            <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.28em] text-brass">
+              The ledger
+            </h2>
+            <Card className="divide-y divide-paper-line">
               {recent.map((a) => (
                 <div key={a.id} className="flex items-center justify-between gap-4 px-5 py-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm">{a.title}</p>
-                    <p className="text-xs text-ink-soft">
+                    <p
+                      className={`font-mono text-[11px] uppercase tracking-wider ${
+                        a.status === "failed" ? "text-pencil" : "text-ink-soft"
+                      }`}
+                    >
                       {a.status === "executed"
                         ? a.demo
-                          ? "Done (simulated — Google/Slack not connected)"
+                          ? "Done · simulated — Google/Slack not connected"
                           : "Done"
                         : a.status === "skipped"
                           ? "Skipped"
@@ -196,9 +216,7 @@ export function Dashboard({
                     </p>
                   </div>
                   {a.status === "executed" && (
-                    <Chip className="shrink-0 bg-accent-soft text-accent">
-                      +{a.minutes_saved} min
-                    </Chip>
+                    <Chip className="shrink-0 text-brass-deep">+{a.minutes_saved} min</Chip>
                   )}
                 </div>
               ))}

@@ -8,8 +8,15 @@ function OrbFallback({ size = 280 }: { size?: number }) {
   return (
     <div
       aria-hidden
-      className="rounded-full bg-iridescent opacity-80 blur-[2px] animate-breathe"
-      style={{ width: size * 0.62, height: size * 0.62, margin: size * 0.19 }}
+      className="rounded-full animate-breathe"
+      style={{
+        width: size * 0.62,
+        height: size * 0.62,
+        margin: size * 0.19,
+        background:
+          "radial-gradient(circle at 36% 30%, #e6c87f 0%, #c2a25b 42%, #8a6f35 78%, #5e4a20 100%)",
+        boxShadow: "0 0 60px rgba(230,200,127,0.25)",
+      }}
     />
   );
 }

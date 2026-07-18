@@ -2,15 +2,21 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
+/* Styled for paper by default; on the dark desk, pass text/border overrides
+   via className (tailwind-merge resolves the conflict). */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium transition-all disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50",
+  "inline-flex items-center justify-center gap-2 rounded-memo text-sm font-medium tracking-wide transition-all disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/60",
   {
     variants: {
       variant: {
-        primary: "bg-iridescent text-white shadow-sm hover:opacity-90 hover:shadow-md",
-        outline: "border border-ink/15 bg-white hover:border-accent/40 hover:bg-accent-soft/40",
+        // Brass plate — the one action that matters on any surface
+        primary:
+          "bg-brass text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_1px_2px_rgba(0,0,0,0.3)] hover:bg-brass-bright",
+        outline:
+          "border border-ink/25 text-ink hover:border-brass-deep hover:text-brass-deep",
         ghost: "text-ink-soft hover:text-ink hover:bg-ink/5",
-        dark: "bg-ink text-white hover:bg-ink/85",
+        // Ink block — dark emphasis on paper
+        dark: "bg-ink text-paper hover:bg-ink/85",
       },
       size: {
         sm: "h-8 px-4 text-xs",

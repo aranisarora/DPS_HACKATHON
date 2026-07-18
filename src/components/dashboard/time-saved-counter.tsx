@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 
-/** Animated count-up: "Donna saved you 4h 20m this week" */
+/** The running ledger total — counted up in bookkeeper's digits. */
 export function TimeSavedCounter({ minutes }: { minutes: number }) {
   const mv = useMotionValue(0);
   const display = useTransform(mv, (v) => {
@@ -26,8 +26,10 @@ export function TimeSavedCounter({ minutes }: { minutes: number }) {
 
   return (
     <div className="mt-2 text-center">
-      <p className="text-sm text-ink-soft">Donna saved you</p>
-      <motion.p className="font-display text-5xl font-semibold tracking-tight text-iridescent">
+      <p className="font-mono text-xs uppercase tracking-[0.2em] text-sage">
+        Donna saved you
+      </p>
+      <motion.p className="mt-1 font-mono text-5xl tracking-tight text-brass-bright">
         {display}
       </motion.p>
     </div>

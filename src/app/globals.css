@@ -3,32 +3,117 @@
 @tailwind utilities;
 
 :root {
-  --canvas: #fafaf8;
-  --ink: #16161a;
+  --desk: #10201b;
+  --paper: #f2ede0;
+  --ink: #1d1b14;
+  --brass: #c2a25b;
+  --pencil: #b23a26;
 }
 
 body {
-  background-color: var(--canvas);
-  color: var(--ink);
+  background-color: var(--desk);
+  color: var(--paper);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Iridescent accent — used only by the orb and approve actions */
-.text-iridescent {
-  background: linear-gradient(120deg, #7c6aea 0%, #5f8bee 45%, #3ec6c0 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+/* Optional leather/felt grain for the desk — /images/desk-grain.png tiles
+   over the base colour and simply doesn't render until the file exists. */
+.desk-surface {
+  background-color: var(--desk);
+  background-image: url("/images/desk-grain.png");
+  background-size: 480px;
 }
 
-.bg-iridescent {
-  background: linear-gradient(120deg, #7c6aea 0%, #5f8bee 45%, #3ec6c0 100%);
+/* Optional paper grain for memos — /images/paper-grain.png, same deal. */
+.paper-surface {
+  background-color: var(--paper);
+  background-image: url("/images/paper-grain.png");
+  background-size: 420px;
 }
 
-.ring-iridescent {
-  box-shadow: 0 0 0 1px rgba(124, 106, 234, 0.25), 0 8px 32px -8px rgba(124, 106, 234, 0.35);
+/* Ruled memo lines, like a steno pad */
+.paper-ruled {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 27px,
+    rgba(29, 27, 20, 0.07) 27px,
+    rgba(29, 27, 20, 0.07) 28px
+  );
+}
+
+/* The rubber stamp — Donna's signature mark */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.2em 0.55em;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  /* uneven ink coverage */
+  -webkit-mask-image: radial-gradient(
+    ellipse 120% 90% at 42% 38%,
+    #000 62%,
+    rgba(0, 0, 0, 0.72) 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 120% 90% at 42% 38%,
+    #000 62%,
+    rgba(0, 0, 0, 0.72) 100%
+  );
+}
+
+.stamp-tilt {
+  transform: rotate(-6deg);
+}
+
+/* Big slammed-on approval stamp overlaying a memo */
+.stamp-slam {
+  padding: 0.35em 0.8em;
+  border-width: 3px;
+  border-radius: 3px;
+  font-size: 22px;
+  letter-spacing: 0.22em;
+}
+
+/* Brass hairline rule with a small diamond, like an engraved letterhead */
+.letterhead-rule {
+  position: relative;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(194, 162, 91, 0.55), transparent);
+}
+.letterhead-rule::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background: var(--brass);
 }
 
 ::selection {
-  background: rgba(124, 106, 234, 0.2);
+  background: rgba(194, 162, 91, 0.35);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -26,8 +26,9 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="font-display text-3xl font-medium tracking-tight">Settings</h1>
-      <p className="mt-1 text-sm text-ink-soft">
+      <p className="font-mono text-xs uppercase tracking-[0.28em] text-brass">House rules</p>
+      <h1 className="mt-2 font-display text-3xl font-medium tracking-tight">Settings</h1>
+      <p className="mt-1 text-sm text-sage">
         Autonomy thresholds and time-saved estimates. Honest defaults — tune them to your reality.
       </p>
 
@@ -39,14 +40,14 @@ export default async function SettingsPage() {
         </p>
         <p className="mt-2 text-sm">
           {googleConn?.status === "connected" ? (
-            <span className="text-emerald-600">
+            <span className="text-brass-deep">
               Google connected — email &amp; calendar actions run live
               {googleConn.last_synced_at
                 ? ` · last sync ${new Date(googleConn.last_synced_at).toLocaleString()}`
                 : ""}
             </span>
           ) : (
-            <span className="text-amber-600">
+            <span className="text-pencil">
               Google not connected — actions run in simulation. Sign out and back
               in to grant access.
             </span>
