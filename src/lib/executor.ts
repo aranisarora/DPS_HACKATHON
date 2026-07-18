@@ -1,11 +1,20 @@
 import { createAdminClient } from "./supabase/admin";
 import { getGoogleAccessToken } from "./google/tokens";
 import { mayFire } from "./autonomy/router";
+import { sanitizeCalendarParams } from "./autonomy/sanitize";
 import { createCalendarEvent, type CalendarEventParams } from "./adapters/calendar";
 import { sendEmail, type SendEmailParams } from "./adapters/gmail";
 import { postSlackMessage, type SlackMessageParams } from "./adapters/slack";
-import type { AdapterResult } from "./adapters";
+import { isDemoMode, type AdapterResult } from "./adapters";
 import type { ProposedAction } from "./types";
+
+/** Human-readable messages for Google token failures (shown on the card). */
+const TOKEN_ERRORS: Record<string, string> = {
+  not_connected: "Google not connected — connect in Settings to run this live",
+  revoked: "Google connection revoked — reconnect in Settings",
+  refresh_failed: "Couldn't refresh Google access — reconnect in Settings",
+  decrypt_failed: "Stored Google credentials are unreadable — reconnect in Settings",
+};
 
 /**
  * ===== The executor =====
@@ -45,8 +54,9 @@ export async function executeAction(
   if (!claimed?.length) return { ok: false, error: "Action already executing or done" };
 
   let result: AdapterResult;
+  const auditExtra: Record<string, unknown> = {};
   try {
-    result = await runAdapter(action);
+    result = await runAdapter(action, opts.approvedByOwner, auditExtra);
   } catch (err) {
     result = { ok: false, demo: false, error: String(err) };
   }
@@ -65,12 +75,36 @@ export async function executeAction(
     external_id: result.external_id,
     detail: result.detail,
     error: result.error,
+    ...auditExtra,
   });
 
   return { ok: result.ok, result, error: result.error };
 }
 
-async function runAdapter(action: ProposedAction): Promise<AdapterResult> {
+/**
+ * Resolves the Google token for live mode. Demo mode (explicit flag or
+ * unconfigured OAuth app) simulates with a null token; a token failure in
+ * live mode FAILS CLOSED — no silent demo fallback.
+ */
+async function resolveGoogleToken(
+  userId: string,
+  auditExtra: Record<string, unknown>
+): Promise<{ token: string | null; failure?: AdapterResult }> {
+  if (isDemoMode("google")) return { token: null };
+  const res = await getGoogleAccessToken(userId);
+  if (res.ok) return { token: res.token };
+  auditExtra.reason = res.reason;
+  return {
+    token: null,
+    failure: { ok: false, demo: false, error: TOKEN_ERRORS[res.reason] ?? "Google connection unavailable" },
+  };
+}
+
+async function runAdapter(
+  action: ProposedAction,
+  approvedByOwner: boolean,
+  auditExtra: Record<string, unknown>
+): Promise<AdapterResult> {
   const p = action.params as Record<string, unknown>;
   const key = action.idempotency_key;
 
@@ -78,14 +112,23 @@ async function runAdapter(action: ProposedAction): Promise<AdapterResult> {
     case "follow_up_booking":
     case "calendar_block":
     case "agenda_add": {
-      const token = await getGoogleAccessToken(action.user_id);
-      return createCalendarEvent(token, p as unknown as CalendarEventParams, key);
+      const { token, failure } = await resolveGoogleToken(action.user_id, auditExtra);
+      if (failure) return failure;
+      // Never email invites to attendees the owner hasn't approved — holds
+      // even if the model mislabeled blast_radius and the action auto-fired.
+      const { params: safeParams, stripped_attendees } = sanitizeCalendarParams(
+        p as unknown as CalendarEventParams,
+        approvedByOwner
+      );
+      if (stripped_attendees) auditExtra.stripped_attendees = stripped_attendees;
+      return createCalendarEvent(token, safeParams, key);
     }
 
     case "recap_email":
     case "absentee_update":
     case "email_reply": {
-      const token = await getGoogleAccessToken(action.user_id);
+      const { token, failure } = await resolveGoogleToken(action.user_id, auditExtra);
+      if (failure) return failure;
       return sendEmail(token, p as unknown as SendEmailParams, key);
     }
 

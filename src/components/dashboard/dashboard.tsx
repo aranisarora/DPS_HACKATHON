@@ -1,33 +1,47 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Orb, type OrbMood } from "@/components/orb/orb";
 import { ActionCard } from "./action-card";
 import { SendBot } from "./send-bot";
+import { TellDonna } from "./tell-donna";
 import { TimeSavedCounter } from "./time-saved-counter";
+import { ReconnectGoogle } from "@/components/reconnect-google";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ProposedAction } from "@/lib/types";
+
+export type GoogleStatus = "connected" | "revoked" | "none";
 
 export function Dashboard({
   userEmail,
   initialPending,
   initialRecent,
   initialWeeklyMinutes,
+  googleStatus,
+  googleLive,
 }: {
   userEmail: string;
   initialPending: ProposedAction[];
   initialRecent: ProposedAction[];
   initialWeeklyMinutes: number;
+  googleStatus: GoogleStatus;
+  googleLive: boolean;
 }) {
+  const router = useRouter();
   const [pending, setPending] = useState(initialPending);
   const [recent, setRecent] = useState<(ProposedAction & { demo?: boolean })[]>(initialRecent);
   const [weeklyMinutes, setWeeklyMinutes] = useState(initialWeeklyMinutes);
   const [mood, setMood] = useState<OrbMood>("idle");
   const [seeding, setSeeding] = useState(false);
   const moodTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // router.refresh() re-renders the server page — sync fresh props into state
+  useEffect(() => setPending(initialPending), [initialPending]);
+  useEffect(() => setRecent(initialRecent), [initialRecent]);
 
   const pulse = useCallback((m: OrbMood, ms = 1600) => {
     if (moodTimer.current) clearTimeout(moodTimer.current);
@@ -73,12 +87,14 @@ export function Dashboard({
         } else {
           pulse("skip", 900);
           setRecent((r) => [{ ...action, status: "failed" as const, error: data.error }, ...r].slice(0, 12));
+          // Google may have just been revoked — refresh so the banner appears
+          router.refresh();
         }
       } else {
         setRecent((r) => [{ ...action, status: "skipped" as const }, ...r].slice(0, 12));
       }
     },
-    [pulse]
+    [pulse, router]
   );
 
   const seedDemo = useCallback(async () => {
@@ -129,11 +145,33 @@ export function Dashboard({
             this week
           </p>
           <SendBot onSent={() => pulse("ripple")} />
+          <TellDonna
+            onIngested={() => {
+              pulse("ripple");
+              router.refresh();
+            }}
+          />
         </div>
       </aside>
 
       {/* Approval Inbox — the product */}
       <section>
+        {googleLive && googleStatus !== "connected" && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-5 py-4">
+            <div>
+              <p className="text-sm font-medium text-amber-900">
+                {googleStatus === "revoked"
+                  ? "Google access was revoked"
+                  : "Google isn't connected"}
+              </p>
+              <p className="text-xs text-amber-700">
+                Approved email and calendar actions will fail until you reconnect.
+              </p>
+            </div>
+            <ReconnectGoogle />
+          </div>
+        )}
+
         <div className="mb-6 flex items-end justify-between">
           <div>
             <h1 className="font-display text-3xl font-medium tracking-tight">
@@ -212,7 +250,9 @@ export function Dashboard({
                           : "Done"
                         : a.status === "skipped"
                           ? "Skipped"
-                          : "Failed"}
+                          : a.error
+                            ? `Failed — ${a.error}`
+                            : "Failed"}
                     </p>
                   </div>
                   {a.status === "executed" && (

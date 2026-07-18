@@ -17,7 +17,9 @@ export async function createCalendarEvent(
   params: CalendarEventParams,
   idempotencyKey: string
 ): Promise<AdapterResult> {
-  if (isDemoMode("google") || !accessToken) {
+  // Demo mode only via explicit flag / unconfigured OAuth app. A missing user
+  // token is handled upstream by the executor (fail closed) — never here.
+  if (isDemoMode("google")) {
     return {
       ok: true,
       demo: true,
@@ -26,6 +28,10 @@ export async function createCalendarEvent(
         params.attendees?.length ? ` with ${params.attendees.join(", ")}` : ""
       }`,
     };
+  }
+
+  if (!accessToken) {
+    return { ok: false, demo: false, error: "No Google access token (executor should have failed closed)" };
   }
 
   try {

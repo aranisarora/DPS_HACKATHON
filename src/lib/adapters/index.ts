@@ -50,7 +50,14 @@ export async function withRetry<T>(
 export function isDemoMode(integration: "google" | "slack" | "recall"): boolean {
   switch (integration) {
     case "google":
-      return !process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET;
+      // Demo only when explicitly flagged or the OAuth app isn't configured.
+      // A configured app with a missing/revoked USER token is NOT demo —
+      // the executor fails closed and prompts a reconnect.
+      return (
+        process.env.DONNA_DEMO === "1" ||
+        !process.env.GOOGLE_CLIENT_ID ||
+        !process.env.GOOGLE_CLIENT_SECRET
+      );
     case "slack":
       return !process.env.SLACK_BOT_TOKEN;
     case "recall":

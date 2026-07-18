@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
-import { Dashboard } from "@/components/dashboard/dashboard";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoMode } from "@/lib/adapters";
+import { Dashboard, type GoogleStatus } from "@/components/dashboard/dashboard";
 import type { ProposedAction } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +13,19 @@ export default async function AppPage() {
   } = await supabase.auth.getUser();
 
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
+
+  // google_connections is service-role only — read via the admin client.
+  let googleStatus: GoogleStatus = "none";
+  if (user) {
+    const { data: conn } = await createAdminClient()
+      .from("google_connections")
+      .select("status")
+      .eq("user_id", user.id)
+      .eq("provider", "google")
+      .maybeSingle();
+    googleStatus =
+      conn?.status === "connected" ? "connected" : conn ? "revoked" : "none";
+  }
 
   const [{ data: pending }, { data: recent }, { data: executedWeek }] = await Promise.all([
     supabase
@@ -39,6 +54,8 @@ export default async function AppPage() {
       initialPending={(pending ?? []) as ProposedAction[]}
       initialRecent={(recent ?? []) as ProposedAction[]}
       initialWeeklyMinutes={weeklyMinutes}
+      googleStatus={googleStatus}
+      googleLive={!isDemoMode("google")}
     />
   );
 }

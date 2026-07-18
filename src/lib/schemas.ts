@@ -50,6 +50,25 @@ export const DecisionSchema = z.object({
   edited_params: z.record(z.unknown()).optional(),
 });
 
+export const CreateTaskSchema = z.object({
+  title: z.string().min(1).max(200),
+  detail: z.string().max(2000).optional(),
+  assignee_name: z.string().max(200).optional(),
+  due_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD")
+    .optional(),
+});
+
+export const UpdateTaskSchema = z.object({
+  task_id: z.string().uuid(),
+  status: z.enum(["open", "done"]),
+});
+
+export const ManualIngestSchema = z.object({
+  text: z.string().min(3).max(10000),
+});
+
 export const OnboardingSchema = z.object({
   what_you_do: z.string().min(3).max(1000),
   who_your_clients_are: z.string().min(3).max(1000),

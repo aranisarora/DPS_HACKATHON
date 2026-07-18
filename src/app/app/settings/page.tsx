@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/card";
 import { SettingsForm } from "@/components/settings-form";
+import { ReconnectGoogle } from "@/components/reconnect-google";
 
 export const dynamic = "force-dynamic";
 
@@ -38,21 +39,25 @@ export default async function SettingsPage() {
           {profile?.email} · workspace domain{" "}
           <span className="font-medium text-ink">{profile?.company_domain}</span>
         </p>
-        <p className="mt-2 text-sm">
-          {googleConn?.status === "connected" ? (
+        {googleConn?.status === "connected" ? (
+          <p className="mt-2 text-sm">
             <span className="text-brass-deep">
               Google connected — email &amp; calendar actions run live
               {googleConn.last_synced_at
                 ? ` · last sync ${new Date(googleConn.last_synced_at).toLocaleString()}`
                 : ""}
             </span>
-          ) : (
+          </p>
+        ) : (
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
             <span className="text-pencil">
-              Google not connected — actions run in simulation. Sign out and back
-              in to grant access.
+              {googleConn?.status === "revoked"
+                ? "Google access was revoked — approved actions will fail until you reconnect."
+                : "Google not connected — approved actions will fail until you connect."}
             </span>
-          )}
-        </p>
+            <ReconnectGoogle />
+          </div>
+        )}
       </Card>
 
       <SettingsForm initialSettings={profile?.settings ?? {}} />

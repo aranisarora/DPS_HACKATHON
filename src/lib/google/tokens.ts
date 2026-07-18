@@ -47,12 +47,16 @@ export async function storeGoogleConnection(
   );
 }
 
+export type TokenResult =
+  | { ok: true; token: string }
+  | { ok: false; reason: "not_connected" | "revoked" | "refresh_failed" | "decrypt_failed" };
+
 /**
  * Returns a valid access token for the user, refreshing if it expires within
- * a minute. Returns null when the user has no usable connection — callers
- * fall back to demo mode rather than failing.
+ * a minute. FAILS CLOSED: callers get a discriminated result and must surface
+ * the failure to the user — there is no silent demo fallback here.
  */
-export async function getGoogleAccessToken(userId: string): Promise<string | null> {
+export async function getGoogleAccessToken(userId: string): Promise<TokenResult> {
   const db = createAdminClient();
   const { data: conn } = await db
     .from("google_connections")
@@ -61,25 +65,32 @@ export async function getGoogleAccessToken(userId: string): Promise<string | nul
     .eq("provider", "google")
     .maybeSingle();
 
-  if (!conn || conn.status !== "connected" || !conn.access_token_enc) return null;
+  if (!conn || !conn.access_token_enc) return { ok: false, reason: "not_connected" };
+  if (conn.status !== "connected") return { ok: false, reason: "revoked" };
 
   const expiresAt = conn.token_expires_at ? Date.parse(conn.token_expires_at) : 0;
   if (expiresAt - Date.now() > EXPIRY_MARGIN_MS) {
     try {
-      return decryptToken(conn.access_token_enc);
+      return { ok: true, token: decryptToken(conn.access_token_enc) };
     } catch {
-      return null;
+      return { ok: false, reason: "decrypt_failed" };
     }
   }
 
   // Expired (or nearly) — refresh.
-  if (!conn.refresh_token_enc) return null;
+  if (!conn.refresh_token_enc) return { ok: false, reason: "refresh_failed" };
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return null;
+  if (!clientId || !clientSecret) return { ok: false, reason: "refresh_failed" };
+
+  let refreshToken: string;
+  try {
+    refreshToken = decryptToken(conn.refresh_token_enc);
+  } catch {
+    return { ok: false, reason: "decrypt_failed" };
+  }
 
   try {
-    const refreshToken = decryptToken(conn.refresh_token_enc);
     const res = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -98,8 +109,9 @@ export async function getGoogleAccessToken(userId: string): Promise<string | nul
           .from("google_connections")
           .update({ status: "revoked" })
           .eq("id", conn.id);
+        return { ok: false, reason: "revoked" };
       }
-      return null;
+      return { ok: false, reason: "refresh_failed" };
     }
     const data = await res.json();
     await db
@@ -111,8 +123,8 @@ export async function getGoogleAccessToken(userId: string): Promise<string | nul
         ).toISOString(),
       })
       .eq("id", conn.id);
-    return data.access_token as string;
+    return { ok: true, token: data.access_token as string };
   } catch {
-    return null;
+    return { ok: false, reason: "refresh_failed" };
   }
 }

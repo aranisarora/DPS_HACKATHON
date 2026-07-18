@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { googleOAuthOptions } from "@/lib/google/oauth-options";
 import { Orb } from "@/components/orb/orb";
 import { Button } from "@/components/ui/button";
 
@@ -15,12 +16,7 @@ export default function LoginPage() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: { access_type: "offline", prompt: "consent" },
-        scopes:
-          "email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/tasks",
-      },
+      options: googleOAuthOptions(window.location.origin),
     });
     if (error) {
       setError(error.message);

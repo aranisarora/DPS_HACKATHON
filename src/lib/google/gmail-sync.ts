@@ -27,8 +27,9 @@ interface GmailPart {
 export async function syncGmailForUser(
   userId: string
 ): Promise<{ ok: boolean; new_messages: number; baselined?: boolean; error?: string }> {
-  const token = await getGoogleAccessToken(userId);
-  if (!token) return { ok: false, new_messages: 0, error: "not_connected" };
+  const tokenResult = await getGoogleAccessToken(userId);
+  if (!tokenResult.ok) return { ok: false, new_messages: 0, error: "not_connected" };
+  const token = tokenResult.token;
 
   const db = createAdminClient();
   const { data: conn } = await db

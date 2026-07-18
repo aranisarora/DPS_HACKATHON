@@ -62,6 +62,12 @@ https://donna-jet.vercel.app
 2. OAuth & Permissions → Bot scopes: `chat:write`, `users:read`, `im:write`
 3. Install to workspace → copy **Bot User OAuth Token** (`xoxb-…`) → `SLACK_BOT_TOKEN=`
 
+### 6. Cron secret (1 min) — required for the daily Gmail sync
+1. `openssl rand -hex 32` → `.env.local` → `CRON_SECRET=`
+2. Add the same value in Vercel env vars (the `vercel.json` cron calls
+   `GET /api/sync/gmail` with `Authorization: Bearer $CRON_SECRET`; an empty
+   secret means the cron 401s forever)
+
 ---
 
 ## 🚀 Local dev
@@ -73,7 +79,9 @@ npm test           # 14 autonomy-router gate tests
 npm run build      # production build
 ```
 
-**Demo without any external keys:** sign in (after step 3), open the dashboard, click **"Load demo meeting"**. The seeded transcript uses Recall's exact JSON schema and flows through the same router/executor code as a live meeting; adapters run in demo mode (simulate success, marked `demo` in the audit log) until Google/Slack keys are present.
+**Demo without any external keys:** sign in (after step 3), open the dashboard, click **"Load demo meeting"**. The seeded transcript uses Recall's exact JSON schema and flows through the same router/executor code as a live meeting; adapters run in demo mode (simulate success, marked `demo` in the audit log) when `DONNA_DEMO=1` is set **or** the Google OAuth keys are absent.
+
+**Fail-closed rule:** once `GOOGLE_CLIENT_ID/SECRET` are configured, a missing or revoked *user* connection is **not** demo — approved actions fail with a clear error and the dashboard/settings show a **Reconnect Google** button. There is no silent fallback that pretends an email was sent.
 
 ---
 
