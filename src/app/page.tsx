@@ -3,7 +3,6 @@ import { Orb } from "@/components/orb/orb";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Stamp } from "@/components/ui/stamp";
-import { Artwork } from "@/components/ui/artwork";
 
 /* The pipeline, told as a paper trail: every memo moves through three stamps. */
 const MEMOS = [
@@ -89,23 +88,15 @@ export default function Landing() {
           </p>
         </div>
 
-        {/* Her desk — generated still life behind the brass sphere */}
+        {/* Warm lamplight glow behind the brass sphere */}
         <div className="relative flex items-center justify-center">
-          <Artwork
-            src="/images/hero-desk.jpg"
-            alt="An executive assistant's desk at dusk — brass lamp, ivory memos, fountain pen"
-            className="absolute inset-0 rounded-memo"
-            imgClassName="opacity-80 [mask-image:radial-gradient(ellipse_75%_75%_at_center,#000_55%,transparent_100%)]"
-            fallback={
-              <div
-                aria-hidden
-                className="absolute inset-0 m-auto h-[440px] w-[440px] rounded-full blur-3xl"
-                style={{
-                  background:
-                    "radial-gradient(circle at 45% 38%, rgba(230,200,127,0.22), rgba(194,162,91,0.1) 50%, transparent 72%)",
-                }}
-              />
-            }
+          <div
+            aria-hidden
+            className="absolute inset-0 m-auto h-[440px] w-[440px] rounded-full blur-3xl"
+            style={{
+              background:
+                "radial-gradient(circle at 45% 38%, rgba(230,200,127,0.22), rgba(194,162,91,0.1) 50%, transparent 72%)",
+            }}
           />
           <Orb size={360} />
         </div>
