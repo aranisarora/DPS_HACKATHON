@@ -3,7 +3,14 @@ import { extractActions } from "./llm/extract";
 import { routeAction } from "./autonomy/router";
 import { minutesSavedFor } from "./minutes";
 import { executeAction } from "./executor";
+import { parseCalendarParams } from "./schemas";
 import type { ActionType } from "./types";
+
+const CALENDAR_TYPES: ReadonlySet<string> = new Set([
+  "calendar_block",
+  "follow_up_booking",
+  "agenda_add",
+]);
 
 /**
  * ===== The pipeline =====
@@ -50,24 +57,32 @@ export async function processSource(
   const content =
     typeof source.raw === "string" ? source.raw : JSON.stringify(source.raw);
 
+  const settings = userProfile?.settings ?? {};
+
   const extraction = await extractActions(source.kind, content, {
     businessProfile: profileRow?.profile,
     teammates: (teammates ?? []).map((t) => ({ name: t.name ?? t.email, email: t.email })),
+    timezone: settings.timezone ?? process.env.DONNA_DEFAULT_TIMEZONE ?? "UTC",
   });
 
-  const settings = userProfile?.settings ?? {};
   const thresholds = settings.autonomy;
   const minuteOverrides = settings.minutes_saved;
 
   const created: string[] = [];
   for (const a of extraction.actions) {
+    // Calendar events without valid concrete start/end can't execute — the
+    // Google API would 400. Infeasible → the router caps them at suggest.
+    const feasible =
+      a.action_type !== "other" &&
+      (!CALENDAR_TYPES.has(a.action_type) || parseCalendarParams(a.params, a.title).success);
+
     // ===== deterministic routing — the model's scores are inputs, not decisions =====
     const tier = routeAction({
       action_type: a.action_type,
       confidence: a.confidence,
       blast_radius: a.blast_radius,
       reversible: a.reversible,
-      feasible: a.action_type !== "other",
+      feasible,
       thresholds,
     });
 

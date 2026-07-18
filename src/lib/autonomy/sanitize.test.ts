@@ -26,7 +26,10 @@ describe("sanitizeCalendarParams", () => {
   });
 
   it("is a no-op when attendees are absent", () => {
-    const { params: safe, stripped_attendees } = sanitizeCalendarParams({ ...base }, false);
+    const { params: safe, stripped_attendees } = sanitizeCalendarParams(
+      { ...base, attendees: undefined },
+      false
+    );
     expect(safe).toEqual(base);
     expect(stripped_attendees).toBeNull();
   });

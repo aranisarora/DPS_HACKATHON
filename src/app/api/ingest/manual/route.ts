@@ -26,6 +26,24 @@ export async function POST(req: NextRequest) {
     const text = parsed.data.text.trim();
 
     const db = createAdminClient();
+
+    // Remember the browser's timezone so relative dates ("tomorrow") resolve
+    // correctly here AND in webhook/cron sources that have no browser context.
+    const tz = parsed.data.timezone;
+    if (tz) {
+      const { data: prof } = await db
+        .from("profiles")
+        .select("settings")
+        .eq("id", user.id)
+        .single();
+      const settings = (prof?.settings as Record<string, unknown>) ?? {};
+      if (settings.timezone !== tz) {
+        await db
+          .from("profiles")
+          .update({ settings: { ...settings, timezone: tz } })
+          .eq("id", user.id);
+      }
+    }
     const { data: source, error } = await db
       .from("sources")
       .insert({

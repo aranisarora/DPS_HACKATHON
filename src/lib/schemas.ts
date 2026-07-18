@@ -42,6 +42,46 @@ export const ExtractionResultSchema = z.object({
 });
 export type ExtractionResult = z.infer<typeof ExtractionResultSchema>;
 
+// ===== Calendar action params =====
+
+const IsoDateTimeSchema = z
+  .string()
+  .refine((s) => !Number.isNaN(Date.parse(s)), "Expected an ISO 8601 datetime");
+
+/**
+ * Params required to actually create a Google Calendar event. The Google API
+ * rejects events without concrete start/end datetimes, so anything failing
+ * this schema is not feasible to execute — the router downgrades it to a
+ * suggestion, and the executor refuses it outright.
+ */
+export const CalendarParamsSchema = z
+  .object({
+    summary: z.string().min(1).max(300),
+    description: z.string().max(2000).optional(),
+    start: IsoDateTimeSchema,
+    end: IsoDateTimeSchema,
+    attendees: z.array(z.string().email()).max(50).optional(),
+  })
+  .refine((p) => Date.parse(p.end) > Date.parse(p.start), {
+    message: "end must be after start",
+  });
+export type CalendarParams = z.infer<typeof CalendarParamsSchema>;
+
+/**
+ * Lenient parse for LLM-produced calendar params: tolerates a missing
+ * summary (falls back to the action title) before strict validation.
+ */
+export function parseCalendarParams(
+  params: Record<string, unknown>,
+  fallbackSummary?: string
+): ReturnType<typeof CalendarParamsSchema.safeParse> {
+  const candidate =
+    typeof params.summary === "string" && params.summary.trim()
+      ? params
+      : { ...params, summary: fallbackSummary };
+  return CalendarParamsSchema.safeParse(candidate);
+}
+
 // ===== API route inputs =====
 
 export const DecisionSchema = z.object({
@@ -67,7 +107,23 @@ export const UpdateTaskSchema = z.object({
 
 export const ManualIngestSchema = z.object({
   text: z.string().min(3).max(10000),
+  // Browser-reported IANA timezone ("Asia/Kolkata"). Persisted to the profile
+  // so date resolution works for webhook/cron sources too.
+  timezone: z
+    .string()
+    .max(64)
+    .refine(isValidTimezone, "Unknown IANA timezone")
+    .optional(),
 });
+
+function isValidTimezone(tz: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export const OnboardingSchema = z.object({
   what_you_do: z.string().min(3).max(1000),

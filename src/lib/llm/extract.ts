@@ -41,6 +41,16 @@ For each action provide:
 - reversible: can it be trivially undone without anyone outside noticing?
 - params: draft content where applicable (e.g. { "to": ..., "subject": ..., "body": ... } for emails)
 
+Resolve ALL relative dates ("tomorrow", "next Tuesday", "Friday") against <current_datetime>. due_hint must always be a concrete ISO date, never natural language.
+
+CALENDAR ACTIONS (calendar_block, follow_up_booking, agenda_add) — params MUST be:
+{ "summary": string, "description"?: string, "start": ISO 8601 datetime, "end": ISO 8601 datetime, "attendees"?: [emails] }
+- start/end must be concrete datetimes WITH the UTC offset of the owner's timezone (e.g. "2026-07-19T15:00:00+05:30"), resolved against <current_datetime>.
+- If no time of day was stated, pick a sensible business-hours slot and cap confidence at 0.7 so the owner confirms it.
+- Default duration when unstated: 30 minutes for a solo calendar_block, 60 minutes when there are attendees.
+- Only include attendees whose email addresses you actually know (from <teammates> or the source content) — never invent addresses.
+- A hold on the owner's own calendar with no attendees is calendar_block (internal). Anything that invites other people is follow_up_booking (external).
+
 Be conservative with confidence. Anything sent to a client is blast_radius external and reversible false.
 
 Also return "summary": a 2-3 sentence recap of the source.
@@ -50,6 +60,34 @@ Respond with ONLY a JSON object: { "actions": [...], "summary": "..." }`;
 export interface ExtractionContext {
   businessProfile?: Record<string, unknown>;
   teammates?: Array<{ name: string; email: string }>;
+  /** IANA timezone for resolving relative dates. Defaults to UTC. */
+  timezone?: string;
+}
+
+/**
+ * "Friday, July 18, 2026 at 14:30 GMT+05:30 (Asia/Kolkata)" — everything the
+ * model needs to resolve "tomorrow at 3" into a concrete offset datetime.
+ */
+function describeNow(timezone: string): string {
+  let tz = timezone;
+  let formatted: string;
+  try {
+    formatted = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZoneName: "longOffset",
+    }).format(new Date());
+  } catch {
+    tz = "UTC";
+    formatted = new Date().toISOString();
+  }
+  return `${formatted} (${tz})`;
 }
 
 export async function extractActions(
@@ -65,6 +103,7 @@ export async function extractActions(
   }
 
   const userMessage = [
+    `<current_datetime>${describeNow(ctx.timezone ?? "UTC")}</current_datetime>`,
     ctx.businessProfile
       ? `<business_profile>\n${JSON.stringify(ctx.businessProfile)}\n</business_profile>`
       : "",

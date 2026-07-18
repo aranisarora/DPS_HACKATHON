@@ -2,6 +2,7 @@ import { createAdminClient } from "./supabase/admin";
 import { getGoogleAccessToken } from "./google/tokens";
 import { mayFire } from "./autonomy/router";
 import { sanitizeCalendarParams } from "./autonomy/sanitize";
+import { parseCalendarParams } from "./schemas";
 import { createCalendarEvent, type CalendarEventParams } from "./adapters/calendar";
 import { sendEmail, type SendEmailParams } from "./adapters/gmail";
 import { postSlackMessage, type SlackMessageParams } from "./adapters/slack";
@@ -112,15 +113,28 @@ async function runAdapter(
     case "follow_up_booking":
     case "calendar_block":
     case "agenda_add": {
+      // Belt-and-braces re-validation (edited params also pass through here):
+      // never hand the Google API a half-formed event.
+      const parsedCal = parseCalendarParams(p, action.title);
+      if (!parsedCal.success) {
+        const detail = parsedCal.error.issues
+          .map((i) => `${i.path.join(".") || "params"}: ${i.message}`)
+          .join("; ");
+        return { ok: false, demo: false, error: `Calendar event details invalid — ${detail}` };
+      }
       const { token, failure } = await resolveGoogleToken(action.user_id, auditExtra);
       if (failure) return failure;
       // Never email invites to attendees the owner hasn't approved — holds
       // even if the model mislabeled blast_radius and the action auto-fired.
       const { params: safeParams, stripped_attendees } = sanitizeCalendarParams(
-        p as unknown as CalendarEventParams,
+        parsedCal.data as CalendarEventParams,
         approvedByOwner
       );
       if (stripped_attendees) auditExtra.stripped_attendees = stripped_attendees;
+      // Datetimes without an explicit UTC offset need a timeZone or Google 400s
+      if (!hasUtcOffset(safeParams.start) || !hasUtcOffset(safeParams.end)) {
+        safeParams.timeZone = await getUserTimezone(action.user_id);
+      }
       return createCalendarEvent(token, safeParams, key);
     }
 
@@ -162,6 +176,17 @@ async function runAdapter(
     default:
       return { ok: false, demo: false, error: `No adapter for ${action.action_type}` };
   }
+}
+
+/** "2026-07-19T15:00:00+05:30" or "...Z" → true; bare local datetimes → false. */
+function hasUtcOffset(iso: string): boolean {
+  return /(?:Z|[+-]\d{2}:?\d{2})$/.test(iso);
+}
+
+async function getUserTimezone(userId: string): Promise<string> {
+  const db = createAdminClient();
+  const { data } = await db.from("profiles").select("settings").eq("id", userId).single();
+  return data?.settings?.timezone ?? process.env.DONNA_DEFAULT_TIMEZONE ?? "UTC";
 }
 
 function toIsoDate(value: unknown): string | null {

@@ -22,7 +22,11 @@ export function TellDonna({ onIngested }: { onIngested?: () => void }) {
     const res = await fetch("/api/ingest/manual", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ text: text.trim() }),
+      body: JSON.stringify({
+        text: text.trim(),
+        // Lets Donna resolve "tomorrow at 3" in the owner's local time
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }),
     });
     const data = await res.json().catch(() => ({}));
     if (data.ok) {

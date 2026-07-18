@@ -6,6 +6,8 @@ export interface CalendarEventParams {
   start: string; // ISO
   end: string; // ISO
   attendees?: string[]; // emails; empty for own-calendar blocks
+  /** IANA tz; required by Google when start/end lack an explicit UTC offset. */
+  timeZone?: string;
 }
 
 /**
@@ -47,8 +49,8 @@ export async function createCalendarEvent(
           body: JSON.stringify({
             summary: params.summary,
             description: params.description,
-            start: { dateTime: params.start },
-            end: { dateTime: params.end },
+            start: { dateTime: params.start, ...(params.timeZone && { timeZone: params.timeZone }) },
+            end: { dateTime: params.end, ...(params.timeZone && { timeZone: params.timeZone }) },
             attendees: params.attendees?.map((email) => ({ email })),
             // Idempotency: deterministic client-supplied id prevents double-books
             id: idempotencyKey.replace(/-/g, "").slice(0, 26).toLowerCase(),
