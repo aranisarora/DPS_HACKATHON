@@ -44,7 +44,12 @@ export function TellDonna({ onIngested }: { onIngested?: () => void }) {
   return (
     <div className="mt-3 w-full max-w-[280px]">
       {!open ? (
-        <Button variant="outline" size="sm" className="w-full" onClick={() => setOpen(true)}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full border-sage/40 text-sage hover:border-brass hover:text-brass"
+          onClick={() => setOpen(true)}
+        >
           Tell Donna
         </Button>
       ) : (
@@ -65,7 +70,7 @@ export function TellDonna({ onIngested }: { onIngested?: () => void }) {
               placeholder='e.g. "Remind John to send the invoice Friday"'
               rows={3}
               maxLength={10000}
-              className="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
+              className="w-full rounded-memo border border-desk-line bg-desk-raised px-3 py-2 text-sm text-paper placeholder:text-sage/60 focus:outline-none focus:ring-2 focus:ring-brass/60"
             />
             <div className="flex gap-2">
               <Button
@@ -79,6 +84,7 @@ export function TellDonna({ onIngested }: { onIngested?: () => void }) {
               <Button
                 variant="ghost"
                 size="sm"
+                className="text-sage hover:bg-paper/5 hover:text-paper"
                 onClick={() => {
                   setOpen(false);
                   setNote(null);
@@ -91,7 +97,7 @@ export function TellDonna({ onIngested }: { onIngested?: () => void }) {
         </AnimatePresence>
       )}
       {note && (
-        <p className={`mt-2 text-xs ${note.ok ? "text-ink-soft" : "text-red-500"}`}>
+        <p className={`mt-2 text-xs ${note.ok ? "text-sage" : "text-pencil"}`}>
           {note.text}
         </p>
       )}

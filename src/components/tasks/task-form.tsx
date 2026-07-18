@@ -20,7 +20,7 @@ export function TaskForm() {
   const [note, setNote] = useState<{ text: string; ok: boolean } | null>(null);
 
   const inputCls =
-    "w-full rounded-lg border border-ink/15 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40";
+    "w-full rounded-memo border border-desk-line bg-desk-raised px-3 py-2 text-sm text-paper placeholder:text-sage/60 focus:outline-none focus:ring-2 focus:ring-brass/60 [color-scheme:dark]";
 
   const save = useCallback(async () => {
     if (!title.trim() || saving) return;
@@ -53,7 +53,12 @@ export function TaskForm() {
   return (
     <div className="mt-6">
       {!open ? (
-        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-sage/40 text-sage hover:border-brass hover:text-brass"
+          onClick={() => setOpen(true)}
+        >
           Add task
         </Button>
       ) : (
@@ -62,7 +67,7 @@ export function TaskForm() {
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="space-y-2 rounded-xl border border-ink/10 p-4"
+            className="space-y-2 rounded-memo border border-desk-line bg-desk-raised/60 p-4"
           >
             <input
               autoFocus
@@ -101,6 +106,7 @@ export function TaskForm() {
               <Button
                 variant="ghost"
                 size="sm"
+                className="text-sage hover:bg-paper/5 hover:text-paper"
                 onClick={() => {
                   setOpen(false);
                   setNote(null);
@@ -113,7 +119,7 @@ export function TaskForm() {
         </AnimatePresence>
       )}
       {note && (
-        <p className={`mt-2 text-xs ${note.ok ? "text-ink-soft" : "text-red-500"}`}>
+        <p className={`mt-2 text-xs ${note.ok ? "text-sage" : "text-pencil"}`}>
           {note.text}
         </p>
       )}

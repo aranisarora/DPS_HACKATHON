@@ -36,7 +36,7 @@ export function TaskDoneToggle({
       onChange={toggle}
       disabled={busy || !toggleable}
       aria-label={done ? "Mark task open" : "Mark task done"}
-      className="h-4 w-4 shrink-0 cursor-pointer accent-emerald-600 disabled:cursor-not-allowed"
+      className="h-4 w-4 shrink-0 cursor-pointer accent-brass-deep disabled:cursor-not-allowed"
     />
   );
 }
