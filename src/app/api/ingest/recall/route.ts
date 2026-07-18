@@ -30,9 +30,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Webhook secret not configured" }, { status: 503 });
     }
     if (secret) {
-      const sig = req.headers.get("svix-signature") ?? "";
-      const id = req.headers.get("svix-id") ?? "";
-      const ts = req.headers.get("svix-timestamp") ?? "";
+      const sig = req.headers.get("webhook-signature") ?? req.headers.get("svix-signature") ?? "";
+      const id = req.headers.get("webhook-id") ?? req.headers.get("svix-id") ?? "";
+      const ts = req.headers.get("webhook-timestamp") ?? req.headers.get("svix-timestamp") ?? "";
       const secretBytes = Buffer.from(secret.split("_")[1] ?? secret, "base64");
       const expected = createHmac("sha256", secretBytes)
         .update(`${id}.${ts}.${body}`)
