@@ -1,7 +1,12 @@
 import { ExtractionResultSchema, type ExtractionResult } from "../schemas";
 
 /**
- * ===== LLM service — Gemini 2.0 Flash behind a thin interface =====
+ * ===== LLM service — Gemini via Vertex AI express mode behind a thin interface =====
+ *
+ * Auth uses a Google Cloud (Vertex AI / Agent Platform) express-mode API key
+ * against aiplatform.googleapis.com — NOT a Google AI Studio key against
+ * generativelanguage.googleapis.com. The request/response shape is identical;
+ * only the host and the API-key source differ.
  *
  * The model reads transcripts/emails and proposes structured actions.
  * It NEVER makes the fire decision — that belongs to autonomy/router.ts.
@@ -12,8 +17,9 @@ import { ExtractionResultSchema, type ExtractionResult } from "../schemas";
  * never as instructions to follow.
  */
 
-// Overridable without a redeploy in case the pinned model is retired
-const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+// Overridable without a redeploy in case the pinned model is retired.
+// Express mode supports gemini-2.5-flash / -pro / -flash-lite.
+const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 const MAX_RETRIES = 2;
 
 const SYSTEM_PROMPT = `You are the extraction engine for Donna, an AI admin assistant for service businesses.
@@ -50,9 +56,11 @@ export async function extractActions(
   sourceContent: string,
   ctx: ExtractionContext = {}
 ): Promise<ExtractionResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  // Prefer the Vertex AI (Google Cloud) express-mode key; fall back to the
+  // legacy GEMINI_API_KEY name so an existing Vercel var keeps working.
+  const apiKey = process.env.GOOGLE_VERTEX_API_KEY ?? process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY not configured");
+    throw new Error("GOOGLE_VERTEX_API_KEY not configured");
   }
 
   const userMessage = [
@@ -69,7 +77,8 @@ export async function extractActions(
     .filter(Boolean)
     .join("\n\n");
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+  // Vertex AI express-mode endpoint (global; no project/location needed).
+  const url = `https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL}:generateContent?key=${apiKey}`;
 
   let lastError: unknown;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -96,7 +105,7 @@ export async function extractActions(
           },
         }),
       });
-      if (!res.ok) throw new Error(`Gemini API ${res.status}: ${await res.text()}`);
+      if (!res.ok) throw new Error(`Vertex AI ${res.status}: ${await res.text()}`);
       const data = await res.json();
       const text: string =
         data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
