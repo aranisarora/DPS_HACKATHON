@@ -16,18 +16,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Optional leather/felt grain for the desk — /images/desk-grain.png tiles
+/* Optional leather/felt grain for the desk — /images/desk-grain.jpg tiles
    over the base colour and simply doesn't render until the file exists. */
 .desk-surface {
   background-color: var(--desk);
-  background-image: url("/images/desk-grain.png");
+  background-image: url("/images/desk-grain.jpg");
   background-size: 480px;
 }
 
-/* Optional paper grain for memos — /images/paper-grain.png, same deal. */
+/* Optional paper grain for memos — /images/paper-grain.jpg, same deal. */
 .paper-surface {
   background-color: var(--paper);
-  background-image: url("/images/paper-grain.png");
+  background-image: url("/images/paper-grain.jpg");
   background-size: 420px;
 }
 

@@ -92,7 +92,7 @@ export default function Landing() {
         {/* Her desk — generated still life behind the brass sphere */}
         <div className="relative flex items-center justify-center">
           <Artwork
-            src="/images/hero-desk.png"
+            src="/images/hero-desk.jpg"
             alt="An executive assistant's desk at dusk — brass lamp, ivory memos, fountain pen"
             className="absolute inset-0 rounded-memo"
             imgClassName="opacity-80 [mask-image:radial-gradient(ellipse_75%_75%_at_center,#000_55%,transparent_100%)]"
