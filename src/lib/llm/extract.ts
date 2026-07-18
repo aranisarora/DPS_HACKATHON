@@ -1,12 +1,13 @@
 import { ExtractionResultSchema, type ExtractionResult } from "../schemas";
 
 /**
- * ===== LLM service — Gemini via Vertex AI express mode behind a thin interface =====
+ * ===== LLM service — Gemini via the Google AI Studio API behind a thin interface =====
  *
- * Auth uses a Google Cloud (Vertex AI / Agent Platform) express-mode API key
- * against aiplatform.googleapis.com — NOT a Google AI Studio key against
- * generativelanguage.googleapis.com. The request/response shape is identical;
- * only the host and the API-key source differ.
+ * Auth uses a Google AI Studio API key against
+ * generativelanguage.googleapis.com — NOT a Vertex AI express-mode key
+ * against aiplatform.googleapis.com (that path requires the Vertex AI API to
+ * be enabled on the key's GCP project, which the AI Studio flow doesn't do).
+ * The request/response shape is identical; only the host and key source differ.
  *
  * The model reads transcripts/emails and proposes structured actions.
  * It NEVER makes the fire decision — that belongs to autonomy/router.ts.
@@ -18,8 +19,8 @@ import { ExtractionResultSchema, type ExtractionResult } from "../schemas";
  */
 
 // Overridable without a redeploy in case the pinned model is retired.
-// Express mode supports gemini-2.5-flash / -pro / -flash-lite.
-const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+// gemini-2.5-* is closed to new AI Studio projects; 3.5-flash is the current stable.
+const MODEL = process.env.GEMINI_MODEL ?? "gemini-3.5-flash";
 const MAX_RETRIES = 2;
 
 const SYSTEM_PROMPT = `You are the extraction engine for Donna, an AI admin assistant for service businesses.
@@ -56,11 +57,11 @@ export async function extractActions(
   sourceContent: string,
   ctx: ExtractionContext = {}
 ): Promise<ExtractionResult> {
-  // Prefer the Vertex AI (Google Cloud) express-mode key; fall back to the
-  // legacy GEMINI_API_KEY name so an existing Vercel var keeps working.
-  const apiKey = process.env.GOOGLE_VERTEX_API_KEY ?? process.env.GEMINI_API_KEY;
+  // Prefer the AI Studio key; fall back to the old Vertex-era var name so an
+  // existing Vercel var keeps working during the cutover.
+  const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_VERTEX_API_KEY;
   if (!apiKey) {
-    throw new Error("GOOGLE_VERTEX_API_KEY not configured");
+    throw new Error("GEMINI_API_KEY not configured");
   }
 
   const userMessage = [
@@ -77,8 +78,8 @@ export async function extractActions(
     .filter(Boolean)
     .join("\n\n");
 
-  // Vertex AI express-mode endpoint (global; no project/location needed).
-  const url = `https://aiplatform.googleapis.com/v1/publishers/google/models/${MODEL}:generateContent?key=${apiKey}`;
+  // Google AI Studio endpoint.
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
 
   let lastError: unknown;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -102,10 +103,13 @@ export async function extractActions(
             responseMimeType: "application/json",
             maxOutputTokens: 4096,
             temperature: 0.2,
+            // gemini-3.5-flash reasons by default and its thoughts count
+            // against maxOutputTokens, which can truncate the JSON mid-object.
+            thinkingConfig: { thinkingBudget: 0 },
           },
         }),
       });
-      if (!res.ok) throw new Error(`Vertex AI ${res.status}: ${await res.text()}`);
+      if (!res.ok) throw new Error(`Gemini API ${res.status}: ${await res.text()}`);
       const data = await res.json();
       const text: string =
         data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
